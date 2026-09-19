@@ -26,6 +26,34 @@ test('supports RSDWTools-style ID-keyed catalogs and snake-case fields', () => {
   ]);
 });
 
+test('parses the Items.json itemData and iconPath schema', () => {
+  const records = recordsFrom([{
+    name: 'Staff of Light', itemData: 'Hcq0C0UjvN3n8q-X2uqa7w', maxStack: 1,
+    iconPath: 'T_Icon_Staff_of_Light.png', category: 'Weapons/StaffOfLight',
+    description: 'A mystical weapon humming with power.', baseDurability: 1300
+  }], 'Items.json', 'Items');
+  assert.equal(records.length, 1);
+  assert.equal(records[0].id, 'Hcq0C0UjvN3n8q-X2uqa7w');
+  assert.equal(records[0].name, 'Staff of Light');
+  assert.equal(records[0].imageHint, 'T_Icon_Staff_of_Light.png');
+  assert.equal(records[0].category, 'Weapons/StaffOfLight');
+  assert.equal(records[0].dataset, 'Items');
+  assert.equal(records[0].data.maxStack, 1);
+});
+
+test('matches Items.json iconPath to its corresponding image', t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dragonwilds-items-schema-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(root, 'Data', 'Images'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'Data', 'Items.json'), JSON.stringify([{
+    name: 'Staff of Light', itemData: 'Hcq0C0UjvN3n8q-X2uqa7w', maxStack: 1, iconPath: 'T_Icon_Staff_of_Light.png', category: 'Weapons/StaffOfLight'
+  }]));
+  fs.writeFileSync(path.join(root, 'Data', 'Images', 'T_Icon_Staff_of_Light.png'), 'image');
+  const item = loadCatalog(root).entries[0];
+  assert.equal(item.name, 'Staff of Light');
+  assert.equal(item.image, '/catalog-assets/Data/Images/T_Icon_Staff_of_Light.png');
+});
+
 test('indexes Data JSON and associates images by ID', t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dragonwilds-catalog-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));

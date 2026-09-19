@@ -63,13 +63,13 @@ function saveChanged(message = 'Changes saved in this session') {
 }
 
 function itemEntriesFromData() {
-  return dataCatalog.filter(entry => /(item|resource|weapon|armou?r|consum|tool)/i.test(`${entry.category} ${entry.source}`));
+  return dataCatalog.filter(entry => /(item|resource|weapon|armou?r|consum|tool)/i.test(`${entry.dataset || ''} ${entry.category} ${entry.source}`));
 }
 
 const normalizedId = value => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
 function catalogItemFor(id) {
   const wanted = normalizedId(id);
-  return dataCatalog.find(entry => normalizedId(entry.id) === wanted || normalizedId(entry.data?.Id) === wanted || normalizedId(entry.data?.itemId) === wanted);
+  return dataCatalog.find(entry => normalizedId(entry.id) === wanted || normalizedId(entry.data?.Id) === wanted || normalizedId(entry.data?.itemId) === wanted || normalizedId(entry.data?.itemData) === wanted);
 }
 
 function itemFromCatalog(entry, sample) {
@@ -77,7 +77,7 @@ function itemFromCatalog(entry, sample) {
   let identityUpdated = false;
   const updateIdentity = value => {
     if (!value || typeof value !== 'object' || identityUpdated) return;
-    const idKey = Object.keys(value).find(key => /^(item|asset|definition|itemdefinition)?[_-]?id$/i.test(key));
+    const idKey = Object.keys(value).find(key => /^(item|asset|definition|itemdefinition)?[_-]?id$/i.test(key) || /^item[_-]?data$/i.test(key) || (key.toLowerCase() === 'value' && typeof value[key] === 'string'));
     if (idKey) {
       value[idKey] = entry.id; identityUpdated = true;
       const nameKey = Object.keys(value).find(key => /^(item|display)?[_-]?name$/i.test(key));
@@ -102,8 +102,10 @@ function catalogImage(entry, className = 'item-image') {
 
 function itemIdentity(item) {
   if (!item || typeof item !== 'object') return null;
-  const key = Object.keys(item).find(fieldName => /^(item|asset|definition|itemdefinition)?[_-]?id$/i.test(fieldName));
+  const key = Object.keys(item).find(fieldName => /^(item|asset|definition|itemdefinition)?[_-]?id$/i.test(fieldName) || /^item[_-]?data$/i.test(fieldName));
   if (key && ['string', 'number'].includes(typeof item[key])) return item[key];
+  const valueKey = Object.keys(item).find(fieldName => fieldName.toLowerCase() === 'value' && typeof item[fieldName] === 'string' && catalogItemFor(item[fieldName]));
+  if (valueKey) return item[valueKey];
   for (const child of Object.values(item)) {
     const nested = itemIdentity(child);
     if (nested != null) return nested;
@@ -198,7 +200,9 @@ function renderInventory() {
         choice.append(catalogImage(entry, 'catalog-image'));
         const name = document.createElement('strong'); name.textContent = entry.name;
         const id = document.createElement('small'); id.textContent = entry.id;
-        choice.append(name, id);
+        const category = document.createElement('span'); category.className = 'catalog-category'; category.textContent = entry.category || 'Item';
+        choice.title = entry.data?.description || entry.name;
+        choice.append(name, category, id);
         choice.addEventListener('dragstart', event => { event.dataTransfer.effectAllowed = 'copy'; event.dataTransfer.setData('application/x-dragonwilds-item', entry.id); });
         choice.addEventListener('click', () => addCatalogItem(entry)); catalogGrid.append(choice);
       });
