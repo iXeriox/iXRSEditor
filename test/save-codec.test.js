@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const zlib = require('node:zlib');
 const { decodeSave, encodeSave } = require('../lib/save-codec');
-const { findInventories, findSkills, findStats, levelForXp, xpForLevel } = require('../public/editor-tools');
+const { findInventories, findSkills, findStats, findItemCatalog, levelForXp, xpForLevel } = require('../public/editor-tools');
 
 const example = { player: { name: 'Ember', level: 42 }, inventory: [1, 2] };
 
@@ -30,19 +30,19 @@ test('rejects unsupported binary data', () => {
   assert.throws(() => decodeSave(Buffer.from([0, 1, 2, 3])), /Unsupported save/);
 });
 
-test('calculates standard RuneScape levels from XP', () => {
+test('calculates Dragonwilds levels from XP shown in game', () => {
   assert.equal(xpForLevel(1), 0);
-  assert.equal(xpForLevel(2), 83);
-  assert.equal(xpForLevel(99), 13034431);
-  assert.equal(levelForXp(82), 1);
-  assert.equal(levelForXp(83), 2);
-  assert.equal(levelForXp(13034431), 99);
+  assert.equal(xpForLevel(63), 103735);
+  assert.equal(levelForXp(103102), 62);
+  assert.equal(levelForXp(103735), 63);
 });
 
 test('discovers structured editor data in nested saves', () => {
-  const save = { player: { health: 80, inventory: [{ itemId: 'axe', quantity: 2 }], skills: { woodcutting: { xp: 1000 } } } };
+  const save = { player: { health: 80, walkingDistanceExperience: 999999, inventory: [{ itemId: 'axe', name: 'Bronze Axe', quantity: 2 }], skills: { woodcutting: { xp: 1000 } } } };
   assert.equal(findInventories(save)[0].items[0].itemId, 'axe');
   assert.equal(findStats(save)[0].name, 'Health');
   assert.equal(findSkills(save)[0].name, 'Woodcutting');
-  assert.equal(levelForXp(findSkills(save)[0].xp), 9);
+  assert.equal(findSkills(save).length, 1);
+  assert.equal(levelForXp(findSkills(save)[0].xp), 7);
+  assert.equal(findItemCatalog(save)[0].name, 'Bronze Axe');
 });

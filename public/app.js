@@ -1,5 +1,5 @@
 const $ = selector => document.querySelector(selector);
-const { findInventories, findSkills, findStats, setAt, levelForXp, xpForLevel, label } = EditorTools;
+const { findInventories, findSkills, findStats, findItemCatalog, setAt, levelForXp, xpForLevel, label } = EditorTools;
 const uploadView = $('#uploadView');
 const editorView = $('#editorView');
 const fileInput = $('#fileInput');
@@ -81,9 +81,10 @@ function renderInventory() {
   const panel = $('#inventoryPanel');
   panel.replaceChildren();
   const groups = findInventories(saveData);
+  const catalog = findItemCatalog(saveData);
   const header = document.createElement('div');
   header.className = 'panel-intro';
-  header.innerHTML = '<p class="eyebrow">ITEM MANAGEMENT</p><h3>Inventory editor</h3><p>Edit item fields, quantities and slot data. Complex nested values remain available in Full JSON.</p>';
+  header.innerHTML = '<p class="eyebrow">ITEM MANAGEMENT</p><h3>Inventory editor</h3><p>Search your item collection, adjust quantities, duplicate items, or remove slots. Complex values remain available in Full JSON.</p>';
   panel.append(header);
   if (!groups.length) return panel.append(emptyState('No inventory collection found', 'This save uses unfamiliar field names. You can still edit every value in Full JSON.'));
   groups.forEach(group => {
@@ -91,8 +92,20 @@ function renderInventory() {
     section.className = 'data-section';
     const heading = document.createElement('h4');
     heading.textContent = `${group.name} (${group.items.length})`;
+    const controls = document.createElement('div'); controls.className = 'inventory-controls';
+    const search = document.createElement('input'); search.type = 'search'; search.placeholder = `Search ${group.name.toLowerCase()}…`;
+    const picker = document.createElement('select'); picker.setAttribute('aria-label', 'Item to add');
+    if (!catalog.length) picker.append(new Option('New blank item', ''));
+    catalog.forEach((item, catalogIndex) => picker.append(new Option(`${item.name} · ${item.id}`, catalogIndex)));
+    const add = document.createElement('button'); add.className = 'ghost'; add.textContent = '+ ADD ITEM';
+    controls.append(search, picker, add);
     const cards = document.createElement('div');
     cards.className = 'item-grid';
+    add.addEventListener('click', () => {
+      const template = catalog[Number(picker.value)]?.template || group.items.find(item => item && typeof item === 'object');
+      group.items.push(template ? structuredClone(template) : { itemId: '', quantity: 1 });
+      saveChanged('Inventory item added'); renderAll();
+    });
     group.items.forEach((item, index) => {
       const card = document.createElement('article');
       card.className = 'item-card';
@@ -100,6 +113,7 @@ function renderInventory() {
       title.className = 'item-title';
       const displayName = item && typeof item === 'object' ? (item.name || item.itemName || item.id || item.itemId) : item;
       title.textContent = `${index + 1}. ${displayName ?? 'Empty slot'}`;
+      card.dataset.search = String(displayName ?? '').toLowerCase();
       card.append(title);
       if (item && typeof item === 'object') {
         Object.entries(item).filter(([, value]) => ['string', 'number', 'boolean'].includes(typeof value)).forEach(([key, value]) => {
@@ -116,9 +130,15 @@ function renderInventory() {
       const remove = document.createElement('button');
       remove.className = 'danger-button'; remove.textContent = 'REMOVE SLOT';
       remove.addEventListener('click', () => { group.items.splice(index, 1); saveChanged('Inventory item removed'); renderAll(); });
+      if (item && typeof item === 'object') {
+        const duplicate = document.createElement('button'); duplicate.className = 'secondary-button'; duplicate.textContent = 'DUPLICATE';
+        duplicate.addEventListener('click', () => { group.items.splice(index + 1, 0, structuredClone(item)); saveChanged('Inventory item duplicated'); renderAll(); });
+        card.append(duplicate);
+      }
       card.append(remove); cards.append(card);
     });
-    section.append(heading, cards); panel.append(section);
+    search.addEventListener('input', () => cards.querySelectorAll('.item-card').forEach(card => { card.hidden = !card.dataset.search.includes(search.value.toLowerCase()); }));
+    section.append(heading, controls, cards); panel.append(section);
   });
 }
 
@@ -147,7 +167,7 @@ function renderSkills() {
   const panel = $('#skillsPanel'); panel.replaceChildren();
   const skills = findSkills(saveData);
   const header = document.createElement('div'); header.className = 'panel-intro';
-  header.innerHTML = '<p class="eyebrow">XP CALCULATOR</p><h3>Skill editor</h3><p>Levels are calculated from RuneScape XP and capped at 99. Change either level or exact XP.</p>';
+  header.innerHTML = '<p class="eyebrow">DRAGONWILDS XP</p><h3>Skill editor</h3><p>Only playable skills are shown—travel counters such as walking distance are excluded. Change either level or exact XP.</p>';
   panel.append(header);
   if (!skills.length) return panel.append(emptyState('No skill XP fields found', 'Skill experience was not identified automatically. Search for its field name in Full JSON.'));
   const grid = document.createElement('div'); grid.className = 'skill-grid';

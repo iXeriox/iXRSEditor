@@ -20,11 +20,12 @@
   }
   const label = key => String(key).replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
 
+  // Dragonwilds uses a flatter curve than RuneScape. Level 63 starts at
+  // 103,735 XP (the next-level threshold shown for level 62 in-game).
+  const LEVEL_63_XP = 103735;
   function xpForLevel(level) {
     const target = Math.max(1, Math.min(99, Math.trunc(Number(level) || 1)));
-    let points = 0;
-    for (let current = 1; current < target; current += 1) points += Math.floor(current + 300 * (2 ** (current / 7)));
-    return Math.floor(points / 4);
+    return Math.floor(((target - 1) ** 2 * LEVEL_63_XP) / (62 ** 2));
   }
 
   function levelForXp(xp) {
@@ -45,10 +46,14 @@
 
   function findSkills(root) {
     const results = [];
+    const skillNames = /^(attack|magic|ranged|woodcutting|mining|artisan|construction|cooking|farming|crafting|smithing|fishing)$/i;
+    const nonSkills = /(walk|distance|travel|telemetry|time|duration|coordinate|location)/i;
     walk(root, (value, path) => {
       for (const [key, child] of Object.entries(value)) {
-        if (typeof child === 'number' && /(xp|experience)$/i.test(key)) {
-          results.push({ name: label(key.replace(/(xp|experience)$/i, '') || path.at(-1) || 'Skill'), xpPath: [...path, key], xp: child });
+        const strippedKey = key.replace(/(xp|experience)$/i, '');
+        const inSkillContainer = /skills?|experience/i.test(path.at(-1) || '');
+        if (typeof child === 'number' && /(xp|experience)$/i.test(key) && !nonSkills.test(key) && (skillNames.test(strippedKey) || inSkillContainer)) {
+          results.push({ name: label(strippedKey || path.at(-1) || 'Skill'), xpPath: [...path, key], xp: child });
         } else if (/skills?/i.test(path.at(-1) || '') && isObject(child)) {
           const xpKey = Object.keys(child).find(field => /^(xp|experience)$/i.test(field));
           if (xpKey && typeof child[xpKey] === 'number') results.push({ name: label(key), xpPath: [...path, key, xpKey], xp: child[xpKey] });
@@ -56,6 +61,21 @@
       }
     });
     return results.filter((entry, index) => results.findIndex(other => other.xpPath.join('.') === entry.xpPath.join('.')) === index);
+  }
+
+  function findItemCatalog(root) {
+    const catalog = new Map();
+    walk(root, value => {
+      for (const child of Object.values(value)) {
+        if (!isObject(child) || Array.isArray(child)) continue;
+        const idKey = Object.keys(child).find(key => /^(item)?(id|name|type|definition)$/i.test(key));
+        if (!idKey || !['string', 'number'].includes(typeof child[idKey])) continue;
+        const id = child[idKey];
+        const nameKey = Object.keys(child).find(key => /^(display)?name$/i.test(key));
+        catalog.set(String(id), { id, name: nameKey ? String(child[nameKey]) : label(id), template: child });
+      }
+    });
+    return [...catalog.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
 
   function findStats(root) {
@@ -69,5 +89,5 @@
     return results;
   }
 
-  return { findInventories, findSkills, findStats, getAt, setAt, label, xpForLevel, levelForXp };
+  return { findInventories, findSkills, findStats, findItemCatalog, getAt, setAt, label, xpForLevel, levelForXp };
 }));
