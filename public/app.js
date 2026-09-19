@@ -104,6 +104,27 @@ function itemIdentity(item) {
   return null;
 }
 
+function nestedProperty(root, matcher, seen = new WeakSet()) {
+  if (!root || typeof root !== 'object' || seen.has(root)) return null;
+  seen.add(root);
+  for (const key of Object.keys(root)) if (matcher(key, root[key])) return { owner: root, key, value: root[key] };
+  for (const value of Object.values(root)) {
+    const result = nestedProperty(value, matcher, seen);
+    if (result) return result;
+  }
+  return null;
+}
+
+function stackProperty(item) {
+  return nestedProperty(item, (key, value) => typeof value === 'number' && /^(quantity|count|amount|stack|stackcount)$/i.test(key.replace(/[_-]/g, '')));
+}
+
+function stackCap(entry, item) {
+  const cap = nestedProperty(entry?.data, (key, value) => typeof value === 'number' && /^(maxstack|stacklimit|maxquantity|capacity)$/i.test(key.replace(/[_-]/g, '')))
+    || nestedProperty(item, (key, value) => typeof value === 'number' && /^(maxstack|stacklimit|maxquantity|capacity)$/i.test(key.replace(/[_-]/g, '')));
+  return cap?.value ?? null;
+}
+
 function renderOverview() {
   const inventories = findInventories(saveData);
   const skills = findSkills(saveData);
@@ -152,11 +173,13 @@ function renderInventory() {
     const catalogSearch = document.createElement('input'); catalogSearch.type = 'search'; catalogSearch.placeholder = 'Find an item by name or ID…';
     const resultCount = document.createElement('small'); resultCount.className = 'catalog-count';
     const catalogGrid = document.createElement('div'); catalogGrid.className = 'catalog-grid';
+    let replaceIndex = null;
     const addCatalogItem = selected => {
-      const sample = group.items.find(item => item && typeof item === 'object');
+      const sample = replaceIndex == null ? group.items.find(item => item && typeof item === 'object') : group.items[replaceIndex];
       const newItem = selected?.data ? itemFromCatalog(selected, sample) : selected?.template ? structuredClone(selected.template) : { itemId: '', quantity: 1 };
-      group.items.push(newItem);
-      saveChanged('Inventory item added'); renderAll();
+      if (replaceIndex == null) group.items.push(newItem);
+      else group.items[replaceIndex] = newItem;
+      saveChanged(replaceIndex == null ? 'Inventory item added' : 'Inventory item changed'); renderAll();
     };
     const renderCatalog = () => {
       catalogGrid.replaceChildren();
@@ -174,25 +197,34 @@ function renderInventory() {
     };
     catalogSearch.addEventListener('input', renderCatalog); renderCatalog();
     browser.append(catalogSearch, resultCount, catalogGrid);
-    add.addEventListener('click', () => { browser.hidden = !browser.hidden; add.textContent = browser.hidden ? '+ BROWSE ITEMS' : 'CLOSE BROWSER'; });
+    add.addEventListener('click', () => { replaceIndex = null; browser.hidden = !browser.hidden; add.textContent = browser.hidden ? '+ BROWSE ITEMS' : 'CLOSE BROWSER'; });
     group.items.forEach((item, index) => {
       const card = document.createElement('article');
       card.className = 'item-card';
-      const title = document.createElement('div');
-      title.className = 'item-title';
+      const cardHeader = document.createElement('div'); cardHeader.className = 'item-card-header';
+      const slotBadge = document.createElement('span'); slotBadge.className = 'slot-badge'; slotBadge.textContent = `SLOT ${index + 1}`;
+      cardHeader.append(slotBadge);
       const displayName = item && typeof item === 'object' ? (item.name || item.itemName || item.id || item.itemId) : item;
-      title.textContent = `${index + 1}. ${displayName ?? 'Empty slot'}`;
-      card.dataset.search = String(displayName ?? '').toLowerCase();
       const itemId = itemIdentity(item);
       const catalogEntry = dataCatalog.find(entry => String(entry.id) === String(itemId));
-      if (catalogEntry) {
-        card.append(catalogImage(catalogEntry));
-        if (!item?.name && !item?.itemName) title.textContent = `${index + 1}. ${catalogEntry.name}`;
+      const itemName = catalogEntry?.name || displayName || 'Empty slot';
+      const stack = stackProperty(item); const cap = stackCap(catalogEntry, item);
+      if (stack) { const badge = document.createElement('span'); badge.className = 'stack-badge'; badge.textContent = cap ? `${stack.value} / ${cap}` : `× ${stack.value}`; cardHeader.append(badge); }
+      card.append(cardHeader, catalogImage(catalogEntry));
+      const title = document.createElement('div'); title.className = 'item-title'; title.textContent = itemName; card.append(title);
+      if (itemId != null) { const identifier = document.createElement('small'); identifier.className = 'item-id'; identifier.textContent = itemId; identifier.title = itemId; card.append(identifier); }
+      card.dataset.search = `${itemName} ${itemId || ''}`.toLowerCase();
+      if (stack) {
+        const quantity = document.createElement('div'); quantity.className = 'quantity-control';
+        const minus = document.createElement('button'); minus.textContent = '−'; minus.setAttribute('aria-label', `Decrease ${itemName}`);
+        const inputField = field(cap ? `Quantity (max ${cap})` : 'Quantity', stack.value, next => { stack.owner[stack.key] = Math.max(0, Math.min(cap ?? Number.MAX_SAFE_INTEGER, Math.trunc(next))); saveChanged(); renderAll(); }, { min: 0, max: cap });
+        const plus = document.createElement('button'); plus.textContent = '+'; plus.setAttribute('aria-label', `Increase ${itemName}`);
+        minus.addEventListener('click', () => { stack.owner[stack.key] = Math.max(0, stack.owner[stack.key] - 1); saveChanged(); renderAll(); });
+        plus.addEventListener('click', () => { stack.owner[stack.key] = Math.min(cap ?? Number.MAX_SAFE_INTEGER, stack.owner[stack.key] + 1); saveChanged(); renderAll(); });
+        quantity.append(minus, inputField, plus); card.append(quantity);
       }
-      card.dataset.search += ` ${catalogEntry?.name || ''} ${itemId || ''}`.toLowerCase();
-      card.append(title);
       if (item && typeof item === 'object') {
-        Object.entries(item).filter(([, value]) => ['string', 'number', 'boolean'].includes(typeof value)).forEach(([key, value]) => {
+        Object.entries(item).filter(([key, value]) => ['string', 'number', 'boolean'].includes(typeof value) && !/^(item|asset|definition|itemdefinition)?[_-]?id$/i.test(key) && !/^(quantity|count|amount|stack|stackcount)$/i.test(key.replace(/[_-]/g, ''))).forEach(([key, value]) => {
           if (typeof value === 'boolean') {
             const toggle = document.createElement('label');
             toggle.className = 'toggle-field';
@@ -200,14 +232,6 @@ function renderInventory() {
             input.type = 'checkbox'; input.checked = value;
             input.addEventListener('change', () => { item[key] = input.checked; saveChanged(); });
             toggle.append(input, document.createTextNode(label(key))); card.append(toggle);
-          } else if (typeof value === 'number' && /(quantity|count|amount|stack)/i.test(key)) {
-            const quantity = document.createElement('div'); quantity.className = 'quantity-control';
-            const minus = document.createElement('button'); minus.textContent = '−'; minus.setAttribute('aria-label', `Decrease ${label(key)}`);
-            const inputField = field(label(key), value, next => { item[key] = Math.max(0, Math.trunc(next)); saveChanged(); });
-            const plus = document.createElement('button'); plus.textContent = '+'; plus.setAttribute('aria-label', `Increase ${label(key)}`);
-            minus.addEventListener('click', () => { item[key] = Math.max(0, item[key] - 1); saveChanged(); renderAll(); });
-            plus.addEventListener('click', () => { item[key] += 1; saveChanged(); renderAll(); });
-            quantity.append(minus, inputField, plus); card.append(quantity);
           } else card.append(field(label(key), value, next => { item[key] = next; saveChanged(); }));
         });
       } else card.append(field('Value', item ?? '', next => { group.items[index] = next; saveChanged(); }));
@@ -215,9 +239,11 @@ function renderInventory() {
       remove.className = 'danger-button'; remove.textContent = 'REMOVE SLOT';
       remove.addEventListener('click', () => { group.items.splice(index, 1); saveChanged('Inventory item removed'); renderAll(); });
       if (item && typeof item === 'object') {
+        const change = document.createElement('button'); change.className = 'secondary-button'; change.textContent = 'CHANGE ITEM';
+        change.addEventListener('click', () => { replaceIndex = index; browser.hidden = false; add.textContent = 'CLOSE BROWSER'; catalogSearch.value = ''; renderCatalog(); browser.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
         const duplicate = document.createElement('button'); duplicate.className = 'secondary-button'; duplicate.textContent = 'DUPLICATE';
         duplicate.addEventListener('click', () => { group.items.splice(index + 1, 0, structuredClone(item)); saveChanged('Inventory item duplicated'); renderAll(); });
-        card.append(duplicate);
+        card.append(change, duplicate);
       }
       card.append(remove); cards.append(card);
     });
