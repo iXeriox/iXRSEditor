@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const zlib = require('node:zlib');
 const { decodeSave, encodeSave } = require('../lib/save-codec');
-const { findInventories, findSkills, findStats, findItemCatalog, levelForXp, xpForLevel } = require('../public/editor-tools');
+const { SKILLS, findInventories, findSkills, findStats, findItemCatalog, levelForXp, xpForLevel } = require('../public/editor-tools');
 
 const example = { player: { name: 'Ember', level: 42 }, inventory: [1, 2] };
 
@@ -41,9 +41,18 @@ test('calculates Dragonwilds levels from XP shown in game', () => {
 });
 
 test('returns only the twelve Dragonwilds skills in game order', () => {
-  const names = ['Agility', 'Fishing', 'Farming', 'RuneCrafting', 'Cooking', 'Construction', 'Artisan', 'Woodcutting', 'Mining', 'Range', 'Magic', 'Attack'];
+  const names = ['Agility', 'Fishing', 'Farming', 'Runecrafting', 'Cooking', 'Construction', 'Artisan', 'Woodcutting', 'Mining', 'Ranged', 'Magic', 'Attack'];
   const save = { skills: Object.fromEntries(names.map(name => [name, { experience: 100 }]).concat([['walkingDistance', { experience: 999999 }]])) };
-  assert.deepEqual(findSkills(save).map(skill => skill.name), ['Attack', 'Magic', 'Range', 'Mining', 'Woodcutting', 'Artisan', 'Construction', 'Cooking', 'RuneCrafting', 'Farming', 'Fishing', 'Agility']);
+  assert.deepEqual(findSkills(save).map(skill => skill.name), SKILLS.map(skill => skill.name));
+});
+
+test('discovers skills by Dragonwilds IDs in maps and records', () => {
+  const save = {
+    skillXp: { '4pefO9k1lUqfA6mvHNi1SA': 103102 },
+    progress: [{ Id: '0hreSMRVXUihq9qjDO2CFA', Name: 'Magic', Experience: 219160 }],
+    definitions: [{ Id: 'Wf3i7Ha-B06DH719j1vtBw', Name: 'Artisan' }]
+  };
+  assert.deepEqual(findSkills(save).map(skill => [skill.name, skill.xp]), [['Attack', 103102], ['Magic', 219160]]);
 });
 
 test('discovers structured editor data in nested saves', () => {
