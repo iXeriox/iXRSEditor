@@ -46,7 +46,7 @@ function serveStatic(req, res) {
 function serveCatalogAsset(req, res) {
   const relative = decodeURIComponent(req.url.slice('/catalog-assets/'.length));
   const file = path.resolve(__dirname, relative);
-  const allowed = [path.join(__dirname, 'Data'), path.join(__dirname, 'images')]
+  const allowed = [path.join(__dirname, 'Data'), path.join(__dirname, 'images'), path.join(__dirname, 'Images'), path.join(__dirname, 'public', 'images'), path.join(__dirname, 'public', 'Images')]
     .some(root => file.startsWith(`${root}${path.sep}`));
   if (!allowed) return jsonResponse(res, 403, { error: 'Forbidden' });
   fs.readFile(file, (error, data) => {

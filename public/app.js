@@ -12,6 +12,7 @@ let dataCatalog = [];
 
 fetch('/api/catalog').then(response => response.json()).then(catalog => {
   dataCatalog = catalog.entries || [];
+  if (saveData) renderAll();
 }).catch(() => { /* The optional Data folder is not installed. */ });
 
 function toast(message, error = false) {
@@ -63,6 +64,12 @@ function saveChanged(message = 'Changes saved in this session') {
 
 function itemEntriesFromData() {
   return dataCatalog.filter(entry => /(item|resource|weapon|armou?r|consum|tool)/i.test(`${entry.category} ${entry.source}`));
+}
+
+const normalizedId = value => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+function catalogItemFor(id) {
+  const wanted = normalizedId(id);
+  return dataCatalog.find(entry => normalizedId(entry.id) === wanted || normalizedId(entry.data?.Id) === wanted || normalizedId(entry.data?.itemId) === wanted);
 }
 
 function itemFromCatalog(entry, sample) {
@@ -165,11 +172,11 @@ function renderInventory() {
     heading.textContent = `${group.name} (${group.items.length})`;
     const controls = document.createElement('div'); controls.className = 'inventory-controls';
     const search = document.createElement('input'); search.type = 'search'; search.placeholder = `Search ${group.name.toLowerCase()}…`;
-    const add = document.createElement('button'); add.className = 'ghost'; add.textContent = '+ BROWSE ITEMS';
-    controls.append(search, add);
+    controls.append(search);
     const cards = document.createElement('div');
     cards.className = 'item-grid';
-    const browser = document.createElement('div'); browser.className = 'catalog-browser'; browser.hidden = true;
+    const browser = document.createElement('aside'); browser.className = 'catalog-browser';
+    const browserTitle = document.createElement('div'); browserTitle.className = 'catalog-title'; browserTitle.innerHTML = '<strong>ITEM CATALOG</strong><small>Drag an item onto a slot, or click to add</small>';
     const catalogSearch = document.createElement('input'); catalogSearch.type = 'search'; catalogSearch.placeholder = 'Find an item by name or ID…';
     const resultCount = document.createElement('small'); resultCount.className = 'catalog-count';
     const catalogGrid = document.createElement('div'); catalogGrid.className = 'catalog-grid';
@@ -187,17 +194,18 @@ function renderInventory() {
       const matches = catalog.filter(entry => `${entry.name} ${entry.id}`.toLowerCase().includes(query));
       resultCount.textContent = `${matches.length.toLocaleString()} item${matches.length === 1 ? '' : 's'}${matches.length > 200 ? ' · showing first 200' : ''}`;
       matches.slice(0, 200).forEach(entry => {
-        const choice = document.createElement('button'); choice.className = 'catalog-card';
+        const choice = document.createElement('button'); choice.className = 'catalog-card'; choice.draggable = true;
         choice.append(catalogImage(entry, 'catalog-image'));
         const name = document.createElement('strong'); name.textContent = entry.name;
         const id = document.createElement('small'); id.textContent = entry.id;
-        choice.append(name, id); choice.addEventListener('click', () => addCatalogItem(entry)); catalogGrid.append(choice);
+        choice.append(name, id);
+        choice.addEventListener('dragstart', event => { event.dataTransfer.effectAllowed = 'copy'; event.dataTransfer.setData('application/x-dragonwilds-item', entry.id); });
+        choice.addEventListener('click', () => addCatalogItem(entry)); catalogGrid.append(choice);
       });
       if (!catalog.length) catalogGrid.append(emptyState('No item data found', 'Add item JSON and matching images to Data/ to browse the complete catalog.'));
     };
     catalogSearch.addEventListener('input', renderCatalog); renderCatalog();
-    browser.append(catalogSearch, resultCount, catalogGrid);
-    add.addEventListener('click', () => { replaceIndex = null; browser.hidden = !browser.hidden; add.textContent = browser.hidden ? '+ BROWSE ITEMS' : 'CLOSE BROWSER'; });
+    browser.append(browserTitle, catalogSearch, resultCount, catalogGrid);
     group.items.forEach((item, index) => {
       const card = document.createElement('article');
       card.className = 'item-card';
@@ -206,7 +214,7 @@ function renderInventory() {
       cardHeader.append(slotBadge);
       const displayName = item && typeof item === 'object' ? (item.name || item.itemName || item.id || item.itemId) : item;
       const itemId = itemIdentity(item);
-      const catalogEntry = dataCatalog.find(entry => String(entry.id) === String(itemId));
+      const catalogEntry = catalogItemFor(itemId);
       const itemName = catalogEntry?.name || displayName || 'Empty slot';
       const stack = stackProperty(item); const cap = stackCap(catalogEntry, item);
       if (stack) { const badge = document.createElement('span'); badge.className = 'stack-badge'; badge.textContent = cap ? `${stack.value} / ${cap}` : `× ${stack.value}`; cardHeader.append(badge); }
@@ -214,6 +222,13 @@ function renderInventory() {
       const title = document.createElement('div'); title.className = 'item-title'; title.textContent = itemName; card.append(title);
       if (itemId != null) { const identifier = document.createElement('small'); identifier.className = 'item-id'; identifier.textContent = itemId; identifier.title = itemId; card.append(identifier); }
       card.dataset.search = `${itemName} ${itemId || ''}`.toLowerCase();
+      card.addEventListener('dragover', event => { event.preventDefault(); card.classList.add('drop-target'); event.dataTransfer.dropEffect = 'copy'; });
+      card.addEventListener('dragleave', () => card.classList.remove('drop-target'));
+      card.addEventListener('drop', event => {
+        event.preventDefault(); card.classList.remove('drop-target');
+        const entry = catalogItemFor(event.dataTransfer.getData('application/x-dragonwilds-item'));
+        if (entry) { group.items[index] = itemFromCatalog(entry, item); saveChanged(`Slot ${index + 1} changed to ${entry.name}`); renderAll(); }
+      });
       if (stack) {
         const quantity = document.createElement('div'); quantity.className = 'quantity-control';
         const minus = document.createElement('button'); minus.textContent = '−'; minus.setAttribute('aria-label', `Decrease ${itemName}`);
@@ -240,7 +255,7 @@ function renderInventory() {
       remove.addEventListener('click', () => { group.items.splice(index, 1); saveChanged('Inventory item removed'); renderAll(); });
       if (item && typeof item === 'object') {
         const change = document.createElement('button'); change.className = 'secondary-button'; change.textContent = 'CHANGE ITEM';
-        change.addEventListener('click', () => { replaceIndex = index; browser.hidden = false; add.textContent = 'CLOSE BROWSER'; catalogSearch.value = ''; renderCatalog(); browser.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
+        change.addEventListener('click', () => { replaceIndex = index; catalogSearch.value = ''; renderCatalog(); catalogSearch.focus(); browser.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
         const duplicate = document.createElement('button'); duplicate.className = 'secondary-button'; duplicate.textContent = 'DUPLICATE';
         duplicate.addEventListener('click', () => { group.items.splice(index + 1, 0, structuredClone(item)); saveChanged('Inventory item duplicated'); renderAll(); });
         card.append(change, duplicate);
@@ -248,7 +263,15 @@ function renderInventory() {
       card.append(remove); cards.append(card);
     });
     search.addEventListener('input', () => cards.querySelectorAll('.item-card').forEach(card => { card.hidden = !card.dataset.search.includes(search.value.toLowerCase()); }));
-    section.append(heading, controls, browser, cards); panel.append(section);
+    cards.addEventListener('dragover', event => { if (event.target === cards) event.preventDefault(); });
+    cards.addEventListener('drop', event => {
+      if (event.target !== cards) return; event.preventDefault();
+      const entry = catalogItemFor(event.dataTransfer.getData('application/x-dragonwilds-item'));
+      if (entry) addCatalogItem(entry);
+    });
+    const layout = document.createElement('div'); layout.className = 'inventory-layout';
+    const inventorySide = document.createElement('div'); inventorySide.className = 'inventory-side'; inventorySide.append(controls, cards);
+    layout.append(inventorySide, browser); section.append(heading, layout); panel.append(section);
   });
 }
 

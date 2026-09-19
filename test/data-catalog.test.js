@@ -48,6 +48,16 @@ test('associates catalog image hints with local artwork', t => {
   assert.equal(loadCatalog(root).entries[0].image, '/catalog-assets/Data/images/bronze-axe.webp');
 });
 
+test('discovers artwork in an uppercase Images directory', t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dragonwilds-uppercase-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(root, 'Data'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'Images'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'Data', 'Items.json'), JSON.stringify([{ Id: 'sword-id', Name: 'Bronze Sword' }]));
+  fs.writeFileSync(path.join(root, 'Images', 'sword-id.png'), 'image');
+  assert.equal(loadCatalog(root).entries[0].image, '/catalog-assets/Images/sword-id.png');
+});
+
 test('returns an empty catalog when Data is absent', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dragonwilds-empty-'));
   try { assert.deepEqual(loadCatalog(root), { available: false, entries: [], errors: [], counts: {} }); }
