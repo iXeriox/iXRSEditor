@@ -9,11 +9,14 @@ let sourceFile;
 let saveFormat;
 let saveData;
 let dataCatalog = [];
+let catalogError = null;
 
-fetch('/api/catalog').then(response => response.json()).then(catalog => {
+const catalogReady = fetch('/api/catalog').then(async response => {
+  const catalog = await response.json();
+  if (!response.ok) throw new Error(catalog.error || 'Unable to load Items.json');
   dataCatalog = catalog.entries || [];
   if (saveData) renderAll();
-}).catch(() => { /* The optional Data folder is not installed. */ });
+}).catch(error => { catalogError = error.message; });
 
 function toast(message, error = false) {
   const element = $('#toast');
@@ -63,7 +66,8 @@ function saveChanged(message = 'Changes saved in this session') {
 }
 
 function itemEntriesFromData() {
-  return dataCatalog.filter(entry => /(item|resource|weapon|armou?r|consum|tool)/i.test(`${entry.dataset || ''} ${entry.category} ${entry.source}`));
+  const itemsDataset = dataCatalog.filter(entry => /^items?$/i.test(entry.dataset || '') || /(^|\/)items?\.json$/i.test(entry.source || ''));
+  return itemsDataset.length ? itemsDataset : dataCatalog.filter(entry => /(item|resource|weapon|armou?r|consum|tool)/i.test(`${entry.dataset || ''} ${entry.category} ${entry.source}`));
 }
 
 const normalizedId = value => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
@@ -151,6 +155,9 @@ function renderInventory() {
   const header = document.createElement('div');
   header.className = 'panel-intro';
   header.innerHTML = '<p class="eyebrow">ITEM MANAGEMENT</p><h3>Inventory editor</h3><p>Search your item collection, adjust quantities, duplicate items, or remove slots. Complex values remain available in Full JSON.</p>';
+  const catalogStatus = document.createElement('small'); catalogStatus.className = `catalog-status${catalogError ? ' error' : ''}`;
+  catalogStatus.textContent = catalogError ? `Catalog error: ${catalogError}` : `${catalog.length.toLocaleString()} Items.json records loaded`;
+  header.append(catalogStatus);
   panel.append(header);
   if (!groups.length) return panel.append(emptyState('No inventory collection found', 'This save uses unfamiliar field names. You can still edit every value in Full JSON.'));
   groups.forEach(group => {
@@ -367,6 +374,7 @@ async function openFile(file) {
   if (file.size > 100 * 1024 * 1024) return toast('That file exceeds the 100 MB limit.', true);
   toast('Decoding save…');
   try {
+    await catalogReady;
     const response = await fetch('/api/decode', { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: file });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error);

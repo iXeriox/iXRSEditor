@@ -82,3 +82,13 @@ test('prefers an inventory Value over nested modifier IDs', () => {
   };
   assert.equal(findItemIdentity(item, ['staff-of-light-id']), 'staff-of-light-id');
 });
+
+test('scores deeply nested ItemData references above modifiers', () => {
+  const item = {
+    properties: [
+      { Name: '(Magic) Rune Cost Multiplier', Id: 'magic-multiplier-id' },
+      { Name: 'ItemData', Value: { AssetPathName: 'staff-of-light-id' } }
+    ]
+  };
+  assert.equal(findItemIdentity(item, ['magic-multiplier-id', 'staff-of-light-id']), 'staff-of-light-id');
+});

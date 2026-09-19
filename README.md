@@ -24,6 +24,8 @@ Inventory cards use each entry's `rangeLocation` to identify its real game area:
 
 Item identity resolution prioritizes catalog-matching `Value`/`itemData` fields over nested modifier IDs, preventing effects such as “(Magic) Rune Cost Multiplier” from being mistaken for the equipped item. Inventory slots use a compact game-like grid; less common raw properties are available under each card's **More details** disclosure.
 
+Opening a save now waits for `/api/catalog` to finish, and the Inventory header reports how many `Items.json` records loaded (or displays the catalog error). Identity matching scores nested `ItemData`, `Value`, asset-path, and item-definition contexts while penalizing modifier/stat contexts.
+
 Always close the game and back up the complete WGS directory before replacing a save. WGS metadata and Xbox cloud synchronization are managed by the Xbox app; export the edited blob under its original filename and replace it in the original directory while the game is closed.
 
 ## Configuration

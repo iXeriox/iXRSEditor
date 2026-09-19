@@ -35,16 +35,23 @@
 
   function findItemIdentity(root, knownIds = []) {
     const known = new Set([...knownIds].map(value => String(value).toLowerCase()));
-    let preferred = null;
-    let explicit = null;
-    walk(root, value => {
+    let best = null;
+    walk(root, (value, path) => {
       for (const [key, child] of Object.entries(value)) {
         if (!['string', 'number'].includes(typeof child) || !known.has(String(child).toLowerCase())) continue;
-        if (/^item[_-]?data$/i.test(key) || key.toLowerCase() === 'value') preferred ??= child;
-        else if (/^(item|asset|definition|itemdefinition)?[_-]?id$/i.test(key)) explicit ??= child;
+        const normalized = key.replace(/[_-]/g, '').toLowerCase();
+        const context = [...path, key, value.Name, value.name].filter(Boolean).join('.').toLowerCase();
+        let score = 10;
+        if (normalized === 'itemdata') score += 100;
+        if (normalized === 'value') score += 70;
+        if (/assetpathname|objectpath|reference/.test(normalized)) score += 60;
+        if (/^(item|asset|definition|itemdefinition)?id$/.test(normalized)) score += 45;
+        if (/itemdata|inventoryitem|itemdefinition/.test(context)) score += 50;
+        if (/modifier|multiplier|effect|stat/.test(context)) score -= 80;
+        if (!best || score > best.score) best = { value: child, score };
       }
     });
-    return preferred ?? explicit;
+    return best?.value ?? null;
   }
 
   function walk(value, visitor, path = [], seen = new WeakSet()) {
