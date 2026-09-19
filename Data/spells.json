@@ -1,0 +1,218 @@
+[
+  {
+    "Id": "YZOJIURm2He0FSiVNikuuw",
+    "Name": "Access Personal Chest"
+  },
+  {
+    "Id": "XwE9BU8KKWN6WZ6viiXs_g",
+    "Name": "Air Combo 01 New"
+  },
+  {
+    "Id": "8o08LE73eJjctoGjv_vzKQ",
+    "Name": "Air Combo 02 New"
+  },
+  {
+    "Id": "oDfh7U8rSUrg5X2Lau8eFA",
+    "Name": "Air Combo 03 New"
+  },
+  {
+    "Id": "rKok00vpMXFZc2-Yv4OGIg",
+    "Name": "Air Combo 04 New"
+  },
+  {
+    "Id": "0OpS6kVJ-lh8GDOdwPTlTw",
+    "Name": "Air Secondary"
+  },
+  {
+    "Id": "HegOiEb8gROM5UiIDvMVEg",
+    "Name": "Axtral Projection"
+  },
+  {
+    "Id": "Lak9PErrDtKGBUaWaZEB0g",
+    "Name": "Bones To Peaches"
+  },
+  {
+    "Id": "IIpUh0kPoCM5S66X918Cqw",
+    "Name": "Cabbage Rain"
+  },
+  {
+    "Id": "bbTvuUQxCXOlwmuYtgUXAQ",
+    "Name": "Confuse"
+  },
+  {
+    "Id": "F4HfiUNmHYRF3qmH6dkRUQ",
+    "Name": "Corruption Arrows"
+  },
+  {
+    "Id": "X5KsNkeTrRFzqOylC8kV-Q",
+    "Name": "Detect Anima Vents"
+  },
+  {
+    "Id": "Kbp8Vkh9xhOA82GfvuGIXg",
+    "Name": "Detect Ore"
+  },
+  {
+    "Id": "vkzCtkyTAZHeMsChxxAd3g",
+    "Name": "Detect Ore Alt"
+  },
+  {
+    "Id": "Cu31OUKzpI0YPYeJ1lawdQ",
+    "Name": "Enchant Chefs Tools"
+  },
+  {
+    "Id": "fbCzak5hRwXSmGyhG4N0eg",
+    "Name": "Enchantweapon Air"
+  },
+  {
+    "Id": "2Cqf50lVo8GHBZ2CsgCtlQ",
+    "Name": "Enchantweapon Fire"
+  },
+  {
+    "Id": "Q7_YS0cT6pQp2cykPBxkxA",
+    "Name": "Eye Of Oculus"
+  },
+  {
+    "Id": "jom5Wk6oD-B0cyqsozzHXg",
+    "Name": "Ferocious Furnace"
+  },
+  {
+    "Id": "AIZpC08xmENZNmSb4Zxk-A",
+    "Name": "Fire Combo 01"
+  },
+  {
+    "Id": "1ctCsE-JDLHUzXmApYjzOw",
+    "Name": "Fire Combo 02"
+  },
+  {
+    "Id": "_pMm7EPf4pJ7N6aYpMoGvg",
+    "Name": "Fire Combo 03"
+  },
+  {
+    "Id": "65hGRkrDCQ6bDEuhLRE_aA",
+    "Name": "Fire Combo 04"
+  },
+  {
+    "Id": "huAskUYwVsZ6F92wCWOgww",
+    "Name": "Fire Secondary"
+  },
+  {
+    "Id": "3UZevUVbZe1RG3mtp7BTEQ",
+    "Name": "Fire Spirit"
+  },
+  {
+    "Id": "FVQYBUF_XKesgUiJkT5lpQ",
+    "Name": "Get Water From Water Source"
+  },
+  {
+    "Id": "wcO9mEIVOY4TWbyMOzwmRw",
+    "Name": "Harvest"
+  },
+  {
+    "Id": "dl7aeEv1ddNVT4OvxeGwKA",
+    "Name": "Humidify"
+  },
+  {
+    "Id": "FagbeUYSePGrCsq3N8e4mQ",
+    "Name": "Internal Alchemy"
+  },
+  {
+    "Id": "hEHOdkiaq6a7BlePtC1iPQ",
+    "Name": "Magic Focus"
+  },
+  {
+    "Id": "nxIhHkBIYvwOjKeTqbkMwA",
+    "Name": "Magical Mending"
+  },
+  {
+    "Id": "bhzZtkt0UYI1m36Icneq3w",
+    "Name": "Pour Bucket"
+  },
+  {
+    "Id": "TheHhkmHO3y97Mel68COeQ",
+    "Name": "Pour Wateringcan"
+  },
+  {
+    "Id": "zwTCFUQoHsHe_UaxwTSBAQ",
+    "Name": "Rapid Growth"
+  },
+  {
+    "Id": "XboY60hOz4ZKUai_sxhtRw",
+    "Name": "Rocksplosion"
+  },
+  {
+    "Id": "WQCDSUyy97TiwtqgAIcITQ",
+    "Name": "Runes To Rune Essence"
+  },
+  {
+    "Id": "3apsDUd-ZBxO4hGauuowdg",
+    "Name": "Shadow Veil"
+  },
+  {
+    "Id": "XbLZDUaQ2Q3Z-oKlsq4RVw",
+    "Name": "Siphon Runes"
+  },
+  {
+    "Id": "-iwcTUCLh8HpFpWP6t9ocg",
+    "Name": "Snare Trap"
+  },
+  {
+    "Id": "4am1VErR1YnWaOihA5QLdQ",
+    "Name": "Special Abyssalwhip"
+  },
+  {
+    "Id": "OJCh50N4Nd3rzGq2TBKMzQ",
+    "Name": "Special Crystalbow"
+  },
+  {
+    "Id": "2HzikUcK_T42Wx6FUMDfxg",
+    "Name": "Special Plantseed"
+  },
+  {
+    "Id": "-9GntEZev_8OuiiQbuv1hw",
+    "Name": "Special Shoveldig"
+  },
+  {
+    "Id": "kZ9mM0xEAmBWXpWfSDYuBA",
+    "Name": "Special Treeplanting"
+  },
+  {
+    "Id": "dyBWckSRBNkbjvGxirFEKw",
+    "Name": "Splinter"
+  },
+  {
+    "Id": "tcLjt0ov83RbyYKJZMDaMQ",
+    "Name": "Summon Shelter"
+  },
+  {
+    "Id": "n_deu0x83JSQ0e2grNvJKA",
+    "Name": "Surge"
+  },
+  {
+    "Id": "sHhBPkIlFuw4ffSrxCVdAQ",
+    "Name": "Targeting Common"
+  },
+  {
+    "Id": "fN--EU7s-Vez5ICHyfHAWA",
+    "Name": "Tempest Shield"
+  },
+  {
+    "Id": "CzIO20x8xEYrm5eAybHASg",
+    "Name": "Treequipment"
+  },
+  {
+    "Id": "cg4l50WO4NBxlbKWqlvKRg",
+    "Name": "Weapon Barbs"
+  },
+  {
+    "Id": "wqneg0hPWkksXvuHwmKHDw",
+    "Name": "Weapon Poison"
+  },
+  {
+    "Id": "NejB6kiCxneFTLCV74PdyA",
+    "Name": "Whetstone"
+  },
+  {
+    "Id": "dXCEyUWjMTCSI-u8rVpJNg",
+    "Name": "Windstep"
+  }
+]
