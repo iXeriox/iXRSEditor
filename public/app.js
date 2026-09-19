@@ -67,10 +67,20 @@ function itemEntriesFromData() {
 
 function itemFromCatalog(entry, sample) {
   const item = sample && typeof sample === 'object' ? structuredClone(sample) : {};
-  const idKey = Object.keys(item).find(key => /^(item)?(id|definition|type)$/i.test(key)) || 'itemId';
-  const nameKey = Object.keys(item).find(key => /^(item|display)?name$/i.test(key));
-  item[idKey] = entry.id;
-  if (nameKey) item[nameKey] = entry.name;
+  let identityUpdated = false;
+  const updateIdentity = value => {
+    if (!value || typeof value !== 'object' || identityUpdated) return;
+    const idKey = Object.keys(value).find(key => /^(item|asset|definition|itemdefinition)?[_-]?id$/i.test(key));
+    if (idKey) {
+      value[idKey] = entry.id; identityUpdated = true;
+      const nameKey = Object.keys(value).find(key => /^(item|display)?[_-]?name$/i.test(key));
+      if (nameKey) value[nameKey] = entry.name;
+      return;
+    }
+    Object.values(value).forEach(updateIdentity);
+  };
+  updateIdentity(item);
+  if (!identityUpdated) item.itemId = entry.id;
   if (!sample) item.quantity = 1;
   return item;
 }
@@ -81,6 +91,17 @@ function catalogImage(entry, className = 'item-image') {
   if (entry?.image) { visual.src = entry.image; visual.alt = ''; visual.loading = 'lazy'; }
   else visual.textContent = '◆';
   return visual;
+}
+
+function itemIdentity(item) {
+  if (!item || typeof item !== 'object') return null;
+  const key = Object.keys(item).find(fieldName => /^(item|asset|definition|itemdefinition)?[_-]?id$/i.test(fieldName));
+  if (key && ['string', 'number'].includes(typeof item[key])) return item[key];
+  for (const child of Object.values(item)) {
+    const nested = itemIdentity(child);
+    if (nested != null) return nested;
+  }
+  return null;
 }
 
 function renderOverview() {
@@ -162,12 +183,13 @@ function renderInventory() {
       const displayName = item && typeof item === 'object' ? (item.name || item.itemName || item.id || item.itemId) : item;
       title.textContent = `${index + 1}. ${displayName ?? 'Empty slot'}`;
       card.dataset.search = String(displayName ?? '').toLowerCase();
-      const itemId = item && typeof item === 'object' ? (item.itemId ?? item.ItemId ?? item.id ?? item.Id ?? item.definition) : null;
+      const itemId = itemIdentity(item);
       const catalogEntry = dataCatalog.find(entry => String(entry.id) === String(itemId));
       if (catalogEntry) {
         card.append(catalogImage(catalogEntry));
         if (!item?.name && !item?.itemName) title.textContent = `${index + 1}. ${catalogEntry.name}`;
       }
+      card.dataset.search += ` ${catalogEntry?.name || ''} ${itemId || ''}`.toLowerCase();
       card.append(title);
       if (item && typeof item === 'object') {
         Object.entries(item).filter(([, value]) => ['string', 'number', 'boolean'].includes(typeof value)).forEach(([key, value]) => {
