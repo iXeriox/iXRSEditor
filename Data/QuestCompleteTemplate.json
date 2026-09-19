@@ -1,0 +1,486 @@
+[
+  {
+    "QuestId": "3MpWS0mD8A6yFVmjVAA2Qg",
+    "FinalObjective": "DR_Main_Objective_-1",
+    "QuestInts": [],
+    "QuestBools": [
+      {
+        "QuestVariableName": "GivenQuestOnLogin",
+        "QuestVariableValue": true
+      }
+    ]
+  },
+  {
+    "QuestId": "4kbEAUJrs6mebhGkzFQxmA",
+    "FinalObjective": "None",
+    "QuestInts": [],
+    "QuestBools": []
+  },
+  {
+    "QuestId": "AmuXOUitB08PYDCmdVA_Ug",
+    "FinalObjective": "Objective3",
+    "QuestInts": [],
+    "QuestBools": [
+      {
+        "QuestVariableName": "HasTriggeredEntryVolume",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasTriggeredExitVolume",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "SpokeToWOM",
+        "QuestVariableValue": true
+      }
+    ]
+  },
+  {
+    "QuestId": "AsyEt0xjewNEzYmzr_kg_w",
+    "FinalObjective": "Objective5",
+    "QuestInts": [],
+    "QuestBools": [
+      {
+        "QuestVariableName": "HasKilledGarou",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasSpokeToZanik",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "AskedAbtPuppet",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "AskedAbtBandos",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "AskedAbtGoblins",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasClearedDialogue",
+        "QuestVariableValue": true
+      }
+    ]
+  },
+  {
+    "QuestId": "DSGuYE-gPNCI1yCzvZhT8Q",
+    "FinalObjective": "Objective3",
+    "QuestInts": [],
+    "QuestBools": [
+      {
+        "QuestVariableName": "HasRecievedBodyPiece",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasSpokeAboutWardStones",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasHadWardStone",
+        "QuestVariableValue": true
+      }
+    ]
+  },
+  {
+    "QuestId": "eKV5vkDqZH89aGWiY_T7GQ",
+    "FinalObjective": "Put ghosts to rest",
+    "QuestInts": [],
+    "QuestBools": [
+      {
+        "QuestVariableName": "IsHideWellVFX",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasSpokeToGhost1",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasSpokeToAGhost",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "IsObjectiveUpdated",
+        "QuestVariableValue": true
+      }
+    ]
+  },
+  {
+    "QuestId": "Kdj6N0dEw05JjoyDP0pNvw",
+    "FinalObjective": "Objective1",
+    "QuestInts": [],
+    "QuestBools": [
+      {
+        "QuestVariableName": "HasSpokeToVannaka",
+        "QuestVariableValue": true
+      }
+    ]
+  },
+  {
+    "QuestId": "KLBpt02O2AA_kaa_A8Av9w",
+    "FinalObjective": "None",
+    "QuestInts": [],
+    "QuestBools": []
+  },
+  {
+    "QuestId": "luaLQEzPXjx9_ICiz5zkNg",
+    "FinalObjective": "Objective1",
+    "QuestInts": [],
+    "QuestBools": []
+  },
+  {
+    "QuestId": "rai6k0UuXT_GPEixJM0boQ",
+    "FinalObjective": "BringHeartNotStarted",
+    "QuestInts": [],
+    "QuestBools": [
+      {
+        "QuestVariableName": "HasSpokenToVannaka",
+        "QuestVariableValue": true
+      }
+    ]
+  },
+  {
+    "QuestId": "SDcUrkVqRiTKKEyzEh5DWw",
+    "FinalObjective": "Objective2",
+    "QuestInts": [],
+    "QuestBools": []
+  },
+  {
+    "QuestId": "TgVnb0NCLvmEVRed59IgsQ",
+    "FinalObjective": "Chop wood",
+    "QuestInts": [],
+    "QuestBools": [
+      {
+        "QuestVariableName": "HasSpokeToZanik",
+        "QuestVariableValue": true
+      }
+    ]
+  },
+  {
+    "QuestId": "uftGB0es-CGrvXyPoxW31w",
+    "FinalObjective": "BreakTheThreeSeals",
+    "QuestInts": [
+      {
+        "QuestVariableName": "DeathQuest_Beat",
+        "QuestVariableValue": 4
+      },
+      {
+        "QuestVariableName": "StandStoneInt",
+        "QuestVariableValue": 2
+      }
+    ],
+    "QuestBools": [
+      {
+        "QuestVariableName": "HasEnteredBefore",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasTriggeredSearchStructureVolume",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "SpokenToDeath",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "LearnedAboutFragments",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "AskedAboutDeath",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "AskedAboutWithering",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "AskedAboutFellhollow",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "AskedAboutUnderworld",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasSpokenToPostiePete",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasTriggeredFHTPVolume",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasUsedCleansingPool",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasTriggeredSSVol",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "SpokenToCathan",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "WaterfallStoneDone",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "VillageStoneDone",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "FortressStoneDone",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "InvestigatedStandingStones",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "SpokenToSuspicious",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "LearnedCrime",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "LearnedMotive",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "SpokenToSnickering",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "SpokenToShady",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "ArmadylStatueSpokenTo",
+        "QuestVariableValue": true
+      }
+    ]
+  },
+  {
+    "QuestId": "wwEK50EPipTecO20yTquSQ",
+    "FinalObjective": "FindSpectralChinchompaSkulls",
+    "QuestInts": [],
+    "QuestBools": [
+      {
+        "QuestVariableName": "IsQuestAccepted",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "IntroDialogueDone",
+        "QuestVariableValue": true
+      }
+    ]
+  },
+  {
+    "QuestId": "xa8o60AbJZ23FymQeiH3bg",
+    "FinalObjective": "Objective3",
+    "QuestInts": [],
+    "QuestBools": [
+      {
+        "QuestVariableName": "HasSpokeToDoric",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasCompletedWaterStep",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasCraftedMace",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasSpokeToVannaka",
+        "QuestVariableValue": true
+      }
+    ]
+  },
+  {
+    "QuestId": "xmM520wY0W5Qw8qE3YnC5Q",
+    "FinalObjective": "None",
+    "QuestInts": [],
+    "QuestBools": []
+  },
+  {
+    "QuestId": "yrRZnkmro-IvH_OmZ3f-5A",
+    "FinalObjective": "Return to the Wise old man after killing velgar",
+    "QuestInts": [
+      {
+        "QuestVariableName": "QuestBeat",
+        "QuestVariableValue": 5
+      }
+    ],
+    "QuestBools": [
+      {
+        "QuestVariableName": "WOMTempleHidden",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasCompletedFTUE",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasSpokeToWOM",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasMentionedKuldra",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasChoseTellMeAbtDragons",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasChoseTellMeAbtKuldra",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasBed",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "CompletedBeat1",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasCompletedHuntDeerStep",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "VaultGoblinVisible",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "KnowVelgar",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasCastleRecipePiece",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "LearnedAboutDragonkin",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasAntiDragShieldRecipe",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasSpokeToGolbin",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasSwampRecipePiece",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "CompletedBeat2",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "GhostCathanVisible",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasEnteredGhornfell",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasSpokeToCathan",
+        "QuestVariableValue": false
+      },
+      {
+        "QuestVariableName": "HasSummonHornRecipe",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "CompletedBeat3",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "FoundBloodWoodSap",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "FoundDragonTooth",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "CompletedBeat4",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasEverRecievedDragonHead",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "WoMAshiensWatch",
+        "QuestVariableValue": false
+      }
+    ]
+  },
+  {
+    "QuestId": "zrqqFUNmx3lcF6umysJfvQ",
+    "FinalObjective": "Objective3",
+    "QuestInts": [],
+    "QuestBools": [
+      {
+        "QuestVariableName": "HasApproachGeyser",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasSpokeToZanik",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasCollectedRuneEssence",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasCollectedAirRune",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasCollectedAstralRune",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasGotFlax",
+        "QuestVariableValue": true
+      }
+    ]
+  },
+  {
+    "QuestId": "_8zxGkuJtgJeZgG_lEGXuw",
+    "FinalObjective": "None",
+    "QuestInts": [],
+    "QuestBools": []
+  },
+  {
+    "QuestId": "_L6IAEaHSVPnhhaTamBHBA",
+    "FinalObjective": "FinishQuest",
+    "QuestInts": [],
+    "QuestBools": [
+      {
+        "QuestVariableName": "HasStartedFarming",
+        "QuestVariableValue": true
+      },
+      {
+        "QuestVariableName": "HasHarvested",
+        "QuestVariableValue": true
+      }
+    ]
+  }
+]
