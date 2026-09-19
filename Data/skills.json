@@ -1,0 +1,42 @@
+[
+  {
+    "Id": "Wf3i7Ha-B06DH719j1vtBw",
+    "Name": "Artisan"
+  },
+  {
+    "Id": "4pefO9k1lUqfA6mvHNi1SA",
+    "Name": "Attack"
+  },
+  {
+    "Id": "waK-8EyQFQ2xEjCGYmuTRQ",
+    "Name": "Construction"
+  },
+  {
+    "Id": "Tn7t6DQyX0-Q0cM5K7B90A",
+    "Name": "Cooking"
+  },
+  {
+    "Id": "PyUi-0LU_riFY46AnnFiWg",
+    "Name": "Farming"
+  },
+  {
+    "Id": "0hreSMRVXUihq9qjDO2CFA",
+    "Name": "Magic"
+  },
+  {
+    "Id": "jqX0Gh6QI0GFFPCDFK_CJQ",
+    "Name": "Mining"
+  },
+  {
+    "Id": "heq7u88Q2UuLXFqLGTVwQw",
+    "Name": "Ranged"
+  },
+  {
+    "Id": "NOqC-z-2ckqi0El22qMFlw",
+    "Name": "Runecrafting"
+  },
+  {
+    "Id": "4zYUGF5u_0KbMLkWJmmBbQ",
+    "Name": "Woodcutting"
+  }
+]

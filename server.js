@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { decodeSave, encodeSave } = require('./lib/save-codec');
 
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(process.env.PORT) || 9898;
 const HOST = process.env.HOST || '0.0.0.0';
 const MAX_BODY = 100 * 1024 * 1024;
 const publicDir = path.join(__dirname, 'public');
