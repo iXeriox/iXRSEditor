@@ -8,6 +8,11 @@ const editor = $('#jsonEditor');
 let sourceFile;
 let saveFormat;
 let saveData;
+let dataCatalog = [];
+
+fetch('/api/catalog').then(response => response.json()).then(catalog => {
+  dataCatalog = catalog.entries || [];
+}).catch(() => { /* The optional Data folder is not installed. */ });
 
 function toast(message, error = false) {
   const element = $('#toast');
@@ -56,6 +61,20 @@ function saveChanged(message = 'Changes saved in this session') {
   $('#status').textContent = message;
 }
 
+function itemEntriesFromData() {
+  return dataCatalog.filter(entry => /(item|resource|weapon|armou?r|consum|tool)/i.test(`${entry.category} ${entry.source}`));
+}
+
+function itemFromCatalog(entry, sample) {
+  const item = sample && typeof sample === 'object' ? structuredClone(sample) : {};
+  const idKey = Object.keys(item).find(key => /^(item)?(id|definition|type)$/i.test(key)) || 'itemId';
+  const nameKey = Object.keys(item).find(key => /^(item|display)?name$/i.test(key));
+  item[idKey] = entry.id;
+  if (nameKey) item[nameKey] = entry.name;
+  if (!sample) item.quantity = 1;
+  return item;
+}
+
 function renderOverview() {
   const inventories = findInventories(saveData);
   const skills = findSkills(saveData);
@@ -81,7 +100,9 @@ function renderInventory() {
   const panel = $('#inventoryPanel');
   panel.replaceChildren();
   const groups = findInventories(saveData);
-  const catalog = findItemCatalog(saveData);
+  const saveCatalog = findItemCatalog(saveData);
+  const externalItems = itemEntriesFromData();
+  const catalog = externalItems.length ? externalItems : saveCatalog;
   const header = document.createElement('div');
   header.className = 'panel-intro';
   header.innerHTML = '<p class="eyebrow">ITEM MANAGEMENT</p><h3>Inventory editor</h3><p>Search your item collection, adjust quantities, duplicate items, or remove slots. Complex values remain available in Full JSON.</p>';
@@ -102,8 +123,10 @@ function renderInventory() {
     const cards = document.createElement('div');
     cards.className = 'item-grid';
     add.addEventListener('click', () => {
-      const template = catalog[Number(picker.value)]?.template || group.items.find(item => item && typeof item === 'object');
-      group.items.push(template ? structuredClone(template) : { itemId: '', quantity: 1 });
+      const selected = catalog[Number(picker.value)];
+      const sample = group.items.find(item => item && typeof item === 'object');
+      const newItem = selected?.data ? itemFromCatalog(selected, sample) : selected?.template ? structuredClone(selected.template) : { itemId: '', quantity: 1 };
+      group.items.push(newItem);
       saveChanged('Inventory item added'); renderAll();
     });
     group.items.forEach((item, index) => {
@@ -114,6 +137,13 @@ function renderInventory() {
       const displayName = item && typeof item === 'object' ? (item.name || item.itemName || item.id || item.itemId) : item;
       title.textContent = `${index + 1}. ${displayName ?? 'Empty slot'}`;
       card.dataset.search = String(displayName ?? '').toLowerCase();
+      const itemId = item && typeof item === 'object' ? (item.itemId ?? item.ItemId ?? item.id ?? item.Id ?? item.definition) : null;
+      const catalogEntry = dataCatalog.find(entry => String(entry.id) === String(itemId));
+      if (catalogEntry?.image) {
+        const image = document.createElement('img'); image.className = 'item-image'; image.src = catalogEntry.image; image.alt = ''; image.loading = 'lazy';
+        card.append(image);
+        if (!item?.name && !item?.itemName) title.textContent = `${index + 1}. ${catalogEntry.name}`;
+      }
       card.append(title);
       if (item && typeof item === 'object') {
         Object.entries(item).filter(([, value]) => ['string', 'number', 'boolean'].includes(typeof value)).forEach(([key, value]) => {
