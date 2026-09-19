@@ -42,18 +42,33 @@
         <button id="changeFile" class="ghost">CHANGE FILE</button>
       </div>
       <div class="editor-head">
-        <div><p class="eyebrow">SAVE DATA</p><h2>Edit JSON</h2></div>
-        <div class="actions"><button id="formatBtn" class="ghost">FORMAT JSON</button><button id="downloadBtn" class="primary">EXPORT WGS SAVE</button></div>
+        <div><p class="eyebrow">SAVE DATA</p><h2>World workshop</h2></div>
+        <div class="actions"><button id="downloadBtn" class="primary">EXPORT WGS SAVE</button></div>
       </div>
-      <div class="editor-shell">
-        <div class="gutter" id="lines">1</div>
-        <textarea id="jsonEditor" spellcheck="false" aria-label="Save JSON editor"></textarea>
+      <nav class="editor-tabs" aria-label="Save editors">
+        <button class="tab active" data-panel="overview">OVERVIEW</button>
+        <button class="tab" data-panel="inventory">INVENTORY</button>
+        <button class="tab" data-panel="stats">STATS</button>
+        <button class="tab" data-panel="skills">SKILLS</button>
+        <button class="tab" data-panel="json">FULL JSON</button>
+      </nav>
+      <div id="overviewPanel" class="tool-panel"></div>
+      <div id="inventoryPanel" class="tool-panel" hidden></div>
+      <div id="statsPanel" class="tool-panel" hidden></div>
+      <div id="skillsPanel" class="tool-panel" hidden></div>
+      <div id="jsonPanel" class="tool-panel json-panel" hidden>
+        <div class="json-toolbar"><span>Advanced editor</span><button id="formatBtn" class="ghost">FORMAT JSON</button></div>
+        <div class="editor-shell">
+          <div class="gutter" id="lines">1</div>
+          <textarea id="jsonEditor" spellcheck="false" aria-label="Save JSON editor"></textarea>
+        </div>
       </div>
       <div class="statusbar"><span id="status">Ready</span><span id="position">Ln 1, Col 1</span></div>
     </section>
   </main>
   <footer><span>DRAGONWILDS SAVE EDITOR</span><span>Community tool · Not affiliated with Jagex</span></footer>
   <div id="toast" role="status" aria-live="polite"></div>
+  <script src="/editor-tools.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>
