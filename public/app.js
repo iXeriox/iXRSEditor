@@ -75,6 +75,14 @@ function itemFromCatalog(entry, sample) {
   return item;
 }
 
+function catalogImage(entry, className = 'item-image') {
+  const visual = document.createElement(entry?.image ? 'img' : 'div');
+  visual.className = `${className}${entry?.image ? '' : ' image-placeholder'}`;
+  if (entry?.image) { visual.src = entry.image; visual.alt = ''; visual.loading = 'lazy'; }
+  else visual.textContent = '◆';
+  return visual;
+}
+
 function renderOverview() {
   const inventories = findInventories(saveData);
   const skills = findSkills(saveData);
@@ -115,20 +123,37 @@ function renderInventory() {
     heading.textContent = `${group.name} (${group.items.length})`;
     const controls = document.createElement('div'); controls.className = 'inventory-controls';
     const search = document.createElement('input'); search.type = 'search'; search.placeholder = `Search ${group.name.toLowerCase()}…`;
-    const picker = document.createElement('select'); picker.setAttribute('aria-label', 'Item to add');
-    if (!catalog.length) picker.append(new Option('New blank item', ''));
-    catalog.forEach((item, catalogIndex) => picker.append(new Option(`${item.name} · ${item.id}`, catalogIndex)));
-    const add = document.createElement('button'); add.className = 'ghost'; add.textContent = '+ ADD ITEM';
-    controls.append(search, picker, add);
+    const add = document.createElement('button'); add.className = 'ghost'; add.textContent = '+ BROWSE ITEMS';
+    controls.append(search, add);
     const cards = document.createElement('div');
     cards.className = 'item-grid';
-    add.addEventListener('click', () => {
-      const selected = catalog[Number(picker.value)];
+    const browser = document.createElement('div'); browser.className = 'catalog-browser'; browser.hidden = true;
+    const catalogSearch = document.createElement('input'); catalogSearch.type = 'search'; catalogSearch.placeholder = 'Find an item by name or ID…';
+    const resultCount = document.createElement('small'); resultCount.className = 'catalog-count';
+    const catalogGrid = document.createElement('div'); catalogGrid.className = 'catalog-grid';
+    const addCatalogItem = selected => {
       const sample = group.items.find(item => item && typeof item === 'object');
       const newItem = selected?.data ? itemFromCatalog(selected, sample) : selected?.template ? structuredClone(selected.template) : { itemId: '', quantity: 1 };
       group.items.push(newItem);
       saveChanged('Inventory item added'); renderAll();
-    });
+    };
+    const renderCatalog = () => {
+      catalogGrid.replaceChildren();
+      const query = catalogSearch.value.trim().toLowerCase();
+      const matches = catalog.filter(entry => `${entry.name} ${entry.id}`.toLowerCase().includes(query));
+      resultCount.textContent = `${matches.length.toLocaleString()} item${matches.length === 1 ? '' : 's'}${matches.length > 200 ? ' · showing first 200' : ''}`;
+      matches.slice(0, 200).forEach(entry => {
+        const choice = document.createElement('button'); choice.className = 'catalog-card';
+        choice.append(catalogImage(entry, 'catalog-image'));
+        const name = document.createElement('strong'); name.textContent = entry.name;
+        const id = document.createElement('small'); id.textContent = entry.id;
+        choice.append(name, id); choice.addEventListener('click', () => addCatalogItem(entry)); catalogGrid.append(choice);
+      });
+      if (!catalog.length) catalogGrid.append(emptyState('No item data found', 'Add item JSON and matching images to Data/ to browse the complete catalog.'));
+    };
+    catalogSearch.addEventListener('input', renderCatalog); renderCatalog();
+    browser.append(catalogSearch, resultCount, catalogGrid);
+    add.addEventListener('click', () => { browser.hidden = !browser.hidden; add.textContent = browser.hidden ? '+ BROWSE ITEMS' : 'CLOSE BROWSER'; });
     group.items.forEach((item, index) => {
       const card = document.createElement('article');
       card.className = 'item-card';
@@ -139,9 +164,8 @@ function renderInventory() {
       card.dataset.search = String(displayName ?? '').toLowerCase();
       const itemId = item && typeof item === 'object' ? (item.itemId ?? item.ItemId ?? item.id ?? item.Id ?? item.definition) : null;
       const catalogEntry = dataCatalog.find(entry => String(entry.id) === String(itemId));
-      if (catalogEntry?.image) {
-        const image = document.createElement('img'); image.className = 'item-image'; image.src = catalogEntry.image; image.alt = ''; image.loading = 'lazy';
-        card.append(image);
+      if (catalogEntry) {
+        card.append(catalogImage(catalogEntry));
         if (!item?.name && !item?.itemName) title.textContent = `${index + 1}. ${catalogEntry.name}`;
       }
       card.append(title);
@@ -154,6 +178,14 @@ function renderInventory() {
             input.type = 'checkbox'; input.checked = value;
             input.addEventListener('change', () => { item[key] = input.checked; saveChanged(); });
             toggle.append(input, document.createTextNode(label(key))); card.append(toggle);
+          } else if (typeof value === 'number' && /(quantity|count|amount|stack)/i.test(key)) {
+            const quantity = document.createElement('div'); quantity.className = 'quantity-control';
+            const minus = document.createElement('button'); minus.textContent = '−'; minus.setAttribute('aria-label', `Decrease ${label(key)}`);
+            const inputField = field(label(key), value, next => { item[key] = Math.max(0, Math.trunc(next)); saveChanged(); });
+            const plus = document.createElement('button'); plus.textContent = '+'; plus.setAttribute('aria-label', `Increase ${label(key)}`);
+            minus.addEventListener('click', () => { item[key] = Math.max(0, item[key] - 1); saveChanged(); renderAll(); });
+            plus.addEventListener('click', () => { item[key] += 1; saveChanged(); renderAll(); });
+            quantity.append(minus, inputField, plus); card.append(quantity);
           } else card.append(field(label(key), value, next => { item[key] = next; saveChanged(); }));
         });
       } else card.append(field('Value', item ?? '', next => { group.items[index] = next; saveChanged(); }));
@@ -168,7 +200,7 @@ function renderInventory() {
       card.append(remove); cards.append(card);
     });
     search.addEventListener('input', () => cards.querySelectorAll('.item-card').forEach(card => { card.hidden = !card.dataset.search.includes(search.value.toLowerCase()); }));
-    section.append(heading, controls, cards); panel.append(section);
+    section.append(heading, controls, browser, cards); panel.append(section);
   });
 }
 
@@ -179,18 +211,46 @@ function renderStats() {
   header.innerHTML = '<p class="eyebrow">CHARACTER VALUES</p><h3>Stat editor</h3><p>Detected health, resources, currency, armour and character-level values.</p>';
   panel.append(header);
   if (!stats.length) return panel.append(emptyState('No common stats found', 'Open Full JSON to find values specific to this save version.'));
-  const grid = document.createElement('div'); grid.className = 'field-grid';
-  stats.forEach(stat => {
-    const card = document.createElement('div'); card.className = 'stat-card';
-    const path = document.createElement('small'); path.textContent = stat.path.slice(0, -1).join(' › ') || 'Root';
-    if (typeof stat.value === 'boolean') {
-      const toggle = document.createElement('label'); toggle.className = 'toggle-field large';
-      const input = document.createElement('input'); input.type = 'checkbox'; input.checked = stat.value;
-      input.addEventListener('change', () => { setAt(saveData, stat.path, input.checked); saveChanged(); });
-      toggle.append(input, document.createTextNode(stat.name)); card.append(path, toggle);
-    } else card.append(path, field(stat.name, stat.value, next => { setAt(saveData, stat.path, next); saveChanged(); }));
-    grid.append(card);
-  }); panel.append(grid);
+  const categories = [
+    ['Vitals', /health|hp|stamina|mana|energy/i], ['Survival', /hunger|thirst|weight|carry/i],
+    ['Combat', /armou?r/i], ['Currency', /coin|gold/i], ['Character', /level/i]
+  ];
+  const grouped = new Map(categories.map(([name]) => [name, []]));
+  stats.forEach(stat => (grouped.get(categories.find(([, matcher]) => matcher.test(stat.name))?.[0] || 'Character')).push(stat));
+  for (const [category, categoryStats] of grouped) {
+    if (!categoryStats.length) continue;
+    const section = document.createElement('section'); section.className = 'stat-section';
+    const heading = document.createElement('h4'); heading.textContent = category; section.append(heading);
+    const grid = document.createElement('div'); grid.className = 'field-grid';
+    categoryStats.forEach(stat => {
+      const card = document.createElement('div'); card.className = 'stat-card';
+      const path = document.createElement('small'); path.textContent = stat.path.slice(0, -1).join(' › ') || 'Root';
+      if (typeof stat.value === 'boolean') {
+        const toggle = document.createElement('label'); toggle.className = 'toggle-field large';
+        const input = document.createElement('input'); input.type = 'checkbox'; input.checked = stat.value;
+        input.addEventListener('change', () => { setAt(saveData, stat.path, input.checked); saveChanged(); });
+        toggle.append(input, document.createTextNode(stat.name)); card.append(path, toggle);
+      } else {
+        const row = document.createElement('div'); row.className = 'stat-value-row';
+        const decrement = document.createElement('button'); decrement.textContent = '−';
+        const valueField = field(stat.name, stat.value, next => { setAt(saveData, stat.path, next); saveChanged(); });
+        const increment = document.createElement('button'); increment.textContent = '+';
+        decrement.addEventListener('click', () => { setAt(saveData, stat.path, stat.value - 1); saveChanged(); renderStats(); });
+        increment.addEventListener('click', () => { setAt(saveData, stat.path, stat.value + 1); saveChanged(); renderStats(); });
+        row.append(decrement, valueField, increment); card.append(path, row);
+        if (/^(Health|Hp|Stamina|Mana|Energy)$/i.test(stat.name)) {
+          const parentPath = stat.path.slice(0, -1).join('.');
+          const maximum = stats.find(candidate => candidate.path.slice(0, -1).join('.') === parentPath && candidate.name.replace(/\s/g, '').toLowerCase() === `max${stat.name}`.replace(/\s/g, '').toLowerCase());
+          if (maximum) {
+            const refill = document.createElement('button'); refill.className = 'refill-button'; refill.textContent = `REFILL TO ${maximum.value}`;
+            refill.addEventListener('click', () => { setAt(saveData, stat.path, maximum.value); saveChanged(`${stat.name} refilled`); renderStats(); }); card.append(refill);
+          }
+        }
+      }
+      grid.append(card);
+    });
+    section.append(grid); panel.append(section);
+  }
 }
 
 function renderSkills() {

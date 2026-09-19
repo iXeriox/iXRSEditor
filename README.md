@@ -14,6 +14,8 @@ The structured workspace automatically discovers common inventory arrays, charac
 
 When a `Data/` directory is present, the server recursively indexes its JSON files and matches records containing an ID and name. Images from `images/` or `Data/images/` are matched by ID or name and displayed in the item editor. Item-like data files also populate the add-item picker without hard-coding a particular dataset layout.
 
+The inventory workspace includes an illustrated, searchable item browser, compact quantity steppers, duplication, and removal controls. Stats are grouped into Vitals, Survival, Combat, Currency, and Character sections, with stepper controls and refill actions where a matching maximum value exists.
+
 Always close the game and back up the complete WGS directory before replacing a save. WGS metadata and Xbox cloud synchronization are managed by the Xbox app; export the edited blob under its original filename and replace it in the original directory while the game is closed.
 
 ## Configuration
