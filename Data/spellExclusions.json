@@ -1,0 +1,97 @@
+[
+  {
+    "Id": "XwE9BU8KKWN6WZ6viiXs_g",
+    "Name": "Air Combo 01 New",
+    "Reason": "Internal combo attack; rejected by game on save load"
+  },
+  {
+    "Id": "8o08LE73eJjctoGjv_vzKQ",
+    "Name": "Air Combo 02 New",
+    "Reason": "Internal combo attack; rejected by game on save load"
+  },
+  {
+    "Id": "oDfh7U8rSUrg5X2Lau8eFA",
+    "Name": "Air Combo 03 New",
+    "Reason": "Internal combo attack; rejected by game on save load"
+  },
+  {
+    "Id": "rKok00vpMXFZc2-Yv4OGIg",
+    "Name": "Air Combo 04 New",
+    "Reason": "Internal combo attack; rejected by game on save load"
+  },
+  {
+    "Id": "0OpS6kVJ-lh8GDOdwPTlTw",
+    "Name": "Air Secondary",
+    "Reason": "Internal secondary attack action; rejected by game on save load"
+  },
+  {
+    "Id": "AIZpC08xmENZNmSb4Zxk-A",
+    "Name": "Fire Combo 01",
+    "Reason": "Internal combo attack; rejected by game on save load"
+  },
+  {
+    "Id": "1ctCsE-JDLHUzXmApYjzOw",
+    "Name": "Fire Combo 02",
+    "Reason": "Internal combo attack; rejected by game on save load"
+  },
+  {
+    "Id": "_pMm7EPf4pJ7N6aYpMoGvg",
+    "Name": "Fire Combo 03",
+    "Reason": "Internal combo attack; rejected by game on save load"
+  },
+  {
+    "Id": "65hGRkrDCQ6bDEuhLRE_aA",
+    "Name": "Fire Combo 04",
+    "Reason": "Internal combo attack; rejected by game on save load"
+  },
+  {
+    "Id": "huAskUYwVsZ6F92wCWOgww",
+    "Name": "Fire Secondary",
+    "Reason": "Internal secondary attack action; rejected by game on save load"
+  },
+  {
+    "Id": "bhzZtkt0UYI1m36Icneq3w",
+    "Name": "Pour Bucket",
+    "Reason": "Internal tool action; rejected by game on save load"
+  },
+  {
+    "Id": "TheHhkmHO3y97Mel68COeQ",
+    "Name": "Pour Wateringcan",
+    "Reason": "Internal tool action; rejected by game on save load"
+  },
+  {
+    "Id": "3apsDUd-ZBxO4hGauuowdg",
+    "Name": "Shadow Veil",
+    "Reason": "Rejected by game on save load"
+  },
+  {
+    "Id": "4am1VErR1YnWaOihA5QLdQ",
+    "Name": "Special Abyssalwhip",
+    "Reason": "Internal weapon special attack; rejected by game on save load"
+  },
+  {
+    "Id": "OJCh50N4Nd3rzGq2TBKMzQ",
+    "Name": "Special Crystalbow",
+    "Reason": "Internal weapon special attack; rejected by game on save load"
+  },
+  {
+    "Id": "2HzikUcK_T42Wx6FUMDfxg",
+    "Name": "Special Plantseed",
+    "Reason": "Internal tool action; rejected by game on save load"
+  },
+  {
+    "Id": "-9GntEZev_8OuiiQbuv1hw",
+    "Name": "Special Shoveldig",
+    "Reason": "Internal tool action; rejected by game on save load"
+  },
+  {
+    "Id": "kZ9mM0xEAmBWXpWfSDYuBA",
+    "Name": "Special Treeplanting",
+    "Reason": "Internal tool action; rejected by game on save load"
+  },
+  {
+    "Id": "sHhBPkIlFuw4ffSrxCVdAQ",
+    "Name": "Targeting Common",
+    "Reason": "Internal targeting action; rejected by game on save load"
+  }
+]
