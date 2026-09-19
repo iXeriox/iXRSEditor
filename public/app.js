@@ -1,5 +1,5 @@
 const $ = selector => document.querySelector(selector);
-const { findInventories, findSkills, findStats, findItemCatalog, slotInfo, setAt, levelForXp, xpForLevel, label } = EditorTools;
+const { findInventories, findSkills, findStats, findItemCatalog, findItemIdentity, slotInfo, setAt, levelForXp, xpForLevel, label } = EditorTools;
 const uploadView = $('#uploadView');
 const editorView = $('#editorView');
 const fileInput = $('#fileInput');
@@ -69,25 +69,19 @@ function itemEntriesFromData() {
 const normalizedId = value => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
 function catalogItemFor(id) {
   const wanted = normalizedId(id);
-  return dataCatalog.find(entry => normalizedId(entry.id) === wanted || normalizedId(entry.data?.Id) === wanted || normalizedId(entry.data?.itemId) === wanted || normalizedId(entry.data?.itemData) === wanted);
+  const items = itemEntriesFromData();
+  const catalog = items.length ? items : dataCatalog;
+  return catalog.find(entry => normalizedId(entry.id) === wanted || normalizedId(entry.data?.Id) === wanted || normalizedId(entry.data?.itemId) === wanted || normalizedId(entry.data?.itemData) === wanted);
 }
 
 function itemFromCatalog(entry, sample) {
   const item = sample && typeof sample === 'object' ? structuredClone(sample) : {};
-  let identityUpdated = false;
-  const updateIdentity = value => {
-    if (!value || typeof value !== 'object' || identityUpdated) return;
-    const idKey = Object.keys(value).find(key => /^(item|asset|definition|itemdefinition)?[_-]?id$/i.test(key) || /^item[_-]?data$/i.test(key) || (key.toLowerCase() === 'value' && typeof value[key] === 'string'));
-    if (idKey) {
-      value[idKey] = entry.id; identityUpdated = true;
-      const nameKey = Object.keys(value).find(key => /^(item|display)?[_-]?name$/i.test(key));
-      if (nameKey) value[nameKey] = entry.name;
-      return;
-    }
-    Object.values(value).forEach(updateIdentity);
-  };
-  updateIdentity(item);
-  if (!identityUpdated) item.itemId = entry.id;
+  const preferred = nestedProperty(item, (key, value) => typeof value === 'string' && (/^item[_-]?data$/i.test(key) || (key.toLowerCase() === 'value' && catalogItemFor(value))));
+  const fallback = preferred || nestedProperty(item, (key, value) => ['string', 'number'].includes(typeof value) && /^(item|asset|definition|itemdefinition)?[_-]?id$/i.test(key) && catalogItemFor(value));
+  if (fallback) fallback.owner[fallback.key] = entry.id;
+  else item.itemId = entry.id;
+  const name = nestedProperty(item, key => /^(item|display)?[_-]?name$/i.test(key));
+  if (name) name.owner[name.key] = entry.name;
   if (!sample) item.quantity = 1;
   return item;
 }
@@ -101,16 +95,8 @@ function catalogImage(entry, className = 'item-image') {
 }
 
 function itemIdentity(item) {
-  if (!item || typeof item !== 'object') return null;
-  const key = Object.keys(item).find(fieldName => /^(item|asset|definition|itemdefinition)?[_-]?id$/i.test(fieldName) || /^item[_-]?data$/i.test(fieldName));
-  if (key && ['string', 'number'].includes(typeof item[key])) return item[key];
-  const valueKey = Object.keys(item).find(fieldName => fieldName.toLowerCase() === 'value' && typeof item[fieldName] === 'string' && catalogItemFor(item[fieldName]));
-  if (valueKey) return item[valueKey];
-  for (const child of Object.values(item)) {
-    const nested = itemIdentity(child);
-    if (nested != null) return nested;
-  }
-  return null;
+  const items = itemEntriesFromData();
+  return findItemIdentity(item, (items.length ? items : dataCatalog).map(entry => entry.id));
 }
 
 function nestedProperty(root, matcher, seen = new WeakSet()) {
@@ -251,16 +237,19 @@ function renderInventory() {
         quantity.append(minus, inputField, plus); card.append(quantity);
       }
       if (item && typeof item === 'object') {
-        Object.entries(item).filter(([key, value]) => ['string', 'number', 'boolean'].includes(typeof value) && !/^(item|asset|definition|itemdefinition)?[_-]?id$/i.test(key) && !/^(quantity|count|amount|stack|stackcount)$/i.test(key.replace(/[_-]/g, ''))).forEach(([key, value]) => {
+        const details = document.createElement('details'); details.className = 'item-details';
+        const summary = document.createElement('summary'); summary.textContent = 'More details'; details.append(summary);
+        Object.entries(item).filter(([key, value]) => ['string', 'number', 'boolean'].includes(typeof value) && !/^(item|asset|definition|itemdefinition)?[_-]?id$/i.test(key) && !/^(quantity|count|amount|stack|stackcount)$/i.test(key.replace(/[_-]/g, '')) && key.toLowerCase() !== 'value').forEach(([key, value]) => {
           if (typeof value === 'boolean') {
             const toggle = document.createElement('label');
             toggle.className = 'toggle-field';
             const input = document.createElement('input');
             input.type = 'checkbox'; input.checked = value;
             input.addEventListener('change', () => { item[key] = input.checked; saveChanged(); });
-            toggle.append(input, document.createTextNode(label(key))); card.append(toggle);
-          } else card.append(field(label(key), value, next => { item[key] = next; saveChanged(); }));
+            toggle.append(input, document.createTextNode(label(key))); details.append(toggle);
+          } else details.append(field(label(key), value, next => { item[key] = next; saveChanged(); }));
         });
+        if (details.children.length > 1) card.append(details);
       } else card.append(field('Value', item ?? '', next => { group.items[index] = next; saveChanged(); }));
       const remove = document.createElement('button');
       remove.className = 'danger-button'; remove.textContent = 'REMOVE SLOT';

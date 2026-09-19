@@ -22,6 +22,8 @@ The inventory workspace is split into two areas: the user's slots and an illustr
 
 Inventory cards use each entry's `rangeLocation` to identify its real game area: 0–7 Action Bar, 8–31 Main Inventory, 32–55 Rune Inventory, 56–79 Quest Inventory, and 80–103 Extended Slots. The card badge shows its area-relative slot number while its tooltip retains the raw `rangeLocation`.
 
+Item identity resolution prioritizes catalog-matching `Value`/`itemData` fields over nested modifier IDs, preventing effects such as “(Magic) Rune Cost Multiplier” from being mistaken for the equipped item. Inventory slots use a compact game-like grid; less common raw properties are available under each card's **More details** disclosure.
+
 Always close the game and back up the complete WGS directory before replacing a save. WGS metadata and Xbox cloud synchronization are managed by the Xbox app; export the edited blob under its original filename and replace it in the original directory while the game is closed.
 
 ## Configuration

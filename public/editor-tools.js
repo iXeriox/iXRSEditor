@@ -33,6 +33,20 @@
     return { location: numeric, name: range.name, position: numeric - range.start + 1, start: range.start, end: range.end };
   }
 
+  function findItemIdentity(root, knownIds = []) {
+    const known = new Set([...knownIds].map(value => String(value).toLowerCase()));
+    let preferred = null;
+    let explicit = null;
+    walk(root, value => {
+      for (const [key, child] of Object.entries(value)) {
+        if (!['string', 'number'].includes(typeof child) || !known.has(String(child).toLowerCase())) continue;
+        if (/^item[_-]?data$/i.test(key) || key.toLowerCase() === 'value') preferred ??= child;
+        else if (/^(item|asset|definition|itemdefinition)?[_-]?id$/i.test(key)) explicit ??= child;
+      }
+    });
+    return preferred ?? explicit;
+  }
+
   function walk(value, visitor, path = [], seen = new WeakSet()) {
     if (!isObject(value) || seen.has(value)) return;
     seen.add(value);
@@ -132,5 +146,5 @@
     return results;
   }
 
-  return { SKILLS, SLOT_RANGES, slotInfo, findInventories, findSkills, findStats, findItemCatalog, getAt, setAt, label, xpForLevel, levelForXp };
+  return { SKILLS, SLOT_RANGES, slotInfo, findItemIdentity, findInventories, findSkills, findStats, findItemCatalog, getAt, setAt, label, xpForLevel, levelForXp };
 }));

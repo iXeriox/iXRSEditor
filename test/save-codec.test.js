@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const zlib = require('node:zlib');
 const { decodeSave, encodeSave } = require('../lib/save-codec');
-const { SKILLS, findInventories, findSkills, findStats, findItemCatalog, slotInfo, levelForXp, xpForLevel } = require('../public/editor-tools');
+const { SKILLS, findInventories, findSkills, findStats, findItemCatalog, findItemIdentity, slotInfo, levelForXp, xpForLevel } = require('../public/editor-tools');
 
 const example = { player: { name: 'Ember', level: 42 }, inventory: [1, 2] };
 
@@ -73,4 +73,12 @@ test('maps rangeLocation values to game inventory areas', () => {
   assert.equal(slotInfo(8).position, 1);
   assert.equal(slotInfo(31).position, 24);
   assert.equal(slotInfo(104).name, 'Unknown Slots');
+});
+
+test('prefers an inventory Value over nested modifier IDs', () => {
+  const item = {
+    modifiers: [{ Id: 'magic-multiplier-id', Name: '(Magic) Rune Cost Multiplier' }],
+    item: { Value: 'staff-of-light-id' }, Count: 1
+  };
+  assert.equal(findItemIdentity(item, ['staff-of-light-id']), 'staff-of-light-id');
 });
