@@ -18,6 +18,20 @@
     { name: 'Fishing', id: null, aliases: ['fishing'] },
     { name: 'Agility', id: null, aliases: ['agility'] }
   ];
+  const SLOT_RANGES = [
+    { start: 0, end: 7, name: 'Action Bar' },
+    { start: 8, end: 31, name: 'Main Inventory' },
+    { start: 32, end: 55, name: 'Rune Inventory' },
+    { start: 56, end: 79, name: 'Quest Inventory' },
+    { start: 80, end: 103, name: 'Extended Slots' }
+  ];
+
+  function slotInfo(location) {
+    const numeric = Number(location);
+    const range = SLOT_RANGES.find(candidate => numeric >= candidate.start && numeric <= candidate.end);
+    if (!range) return { location: numeric, name: 'Unknown Slots', position: Number.isFinite(numeric) ? numeric + 1 : '?' };
+    return { location: numeric, name: range.name, position: numeric - range.start + 1, start: range.start, end: range.end };
+  }
 
   function walk(value, visitor, path = [], seen = new WeakSet()) {
     if (!isObject(value) || seen.has(value)) return;
@@ -118,5 +132,5 @@
     return results;
   }
 
-  return { SKILLS, findInventories, findSkills, findStats, findItemCatalog, getAt, setAt, label, xpForLevel, levelForXp };
+  return { SKILLS, SLOT_RANGES, slotInfo, findInventories, findSkills, findStats, findItemCatalog, getAt, setAt, label, xpForLevel, levelForXp };
 }));

@@ -1,5 +1,5 @@
 const $ = selector => document.querySelector(selector);
-const { findInventories, findSkills, findStats, findItemCatalog, setAt, levelForXp, xpForLevel, label } = EditorTools;
+const { findInventories, findSkills, findStats, findItemCatalog, slotInfo, setAt, levelForXp, xpForLevel, label } = EditorTools;
 const uploadView = $('#uploadView');
 const editorView = $('#editorView');
 const fileInput = $('#fileInput');
@@ -210,11 +210,19 @@ function renderInventory() {
     };
     catalogSearch.addEventListener('input', renderCatalog); renderCatalog();
     browser.append(browserTitle, catalogSearch, resultCount, catalogGrid);
+    const inferredStart = /rune/i.test(group.name) ? 32 : /quest/i.test(group.name) ? 56 : /extended/i.test(group.name) ? 80 : /action|hotbar/i.test(group.name) ? 0 : /inventory|backpack/i.test(group.name) && group.items.length <= 24 ? 8 : 0;
+    let previousSlotArea = null;
     group.items.forEach((item, index) => {
+      const rangeLocation = nestedProperty(item, (key, value) => typeof value === 'number' && key.replace(/[_-]/g, '').toLowerCase() === 'rangelocation')?.value ?? inferredStart + index;
+      const slot = slotInfo(rangeLocation);
+      if (slot.name !== previousSlotArea) {
+        const rangeHeading = document.createElement('h5'); rangeHeading.className = 'slot-range-heading';
+        rangeHeading.textContent = `${slot.name} · ${slot.start ?? '?'}–${slot.end ?? '?'}`; cards.append(rangeHeading); previousSlotArea = slot.name;
+      }
       const card = document.createElement('article');
-      card.className = 'item-card';
+      card.className = `item-card slot-${slot.name.toLowerCase().replace(/\s+/g, '-')}`;
       const cardHeader = document.createElement('div'); cardHeader.className = 'item-card-header';
-      const slotBadge = document.createElement('span'); slotBadge.className = 'slot-badge'; slotBadge.textContent = `SLOT ${index + 1}`;
+      const slotBadge = document.createElement('span'); slotBadge.className = 'slot-badge'; slotBadge.textContent = `${slot.name} ${slot.position}`; slotBadge.title = `rangeLocation ${slot.location}`;
       cardHeader.append(slotBadge);
       const displayName = item && typeof item === 'object' ? (item.name || item.itemName || item.id || item.itemId) : item;
       const itemId = itemIdentity(item);

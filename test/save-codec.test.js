@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const zlib = require('node:zlib');
 const { decodeSave, encodeSave } = require('../lib/save-codec');
-const { SKILLS, findInventories, findSkills, findStats, findItemCatalog, levelForXp, xpForLevel } = require('../public/editor-tools');
+const { SKILLS, findInventories, findSkills, findStats, findItemCatalog, slotInfo, levelForXp, xpForLevel } = require('../public/editor-tools');
 
 const example = { player: { name: 'Ember', level: 42 }, inventory: [1, 2] };
 
@@ -63,4 +63,14 @@ test('discovers structured editor data in nested saves', () => {
   assert.equal(findSkills(save).length, 1);
   assert.equal(levelForXp(findSkills(save)[0].xp), 15);
   assert.equal(findItemCatalog(save)[0].name, 'Bronze Axe');
+});
+
+test('maps rangeLocation values to game inventory areas', () => {
+  assert.deepEqual([0, 7, 8, 31, 32, 55, 56, 79, 80, 103].map(location => slotInfo(location).name), [
+    'Action Bar', 'Action Bar', 'Main Inventory', 'Main Inventory', 'Rune Inventory',
+    'Rune Inventory', 'Quest Inventory', 'Quest Inventory', 'Extended Slots', 'Extended Slots'
+  ]);
+  assert.equal(slotInfo(8).position, 1);
+  assert.equal(slotInfo(31).position, 24);
+  assert.equal(slotInfo(104).name, 'Unknown Slots');
 });

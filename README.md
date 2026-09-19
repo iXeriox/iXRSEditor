@@ -20,6 +20,8 @@ The RSDWTools `Items.json` schema is supported directly: `itemData` is the ident
 
 The inventory workspace is split into two areas: the user's slots and an illustrated, name/ID-searchable item catalog. Catalog items can be clicked to add them or dragged directly onto an existing slot to replace it. Slots show resolved names and images from `Items.json`, explicit slot labels, secondary ID details, stack quantity/capacity badges, bounded quantity steppers, duplication, and removal controls. Stats are grouped into Vitals, Survival, Combat, Currency, and Character sections, with stepper controls and refill actions where a matching maximum value exists.
 
+Inventory cards use each entry's `rangeLocation` to identify its real game area: 0–7 Action Bar, 8–31 Main Inventory, 32–55 Rune Inventory, 56–79 Quest Inventory, and 80–103 Extended Slots. The card badge shows its area-relative slot number while its tooltip retains the raw `rangeLocation`.
+
 Always close the game and back up the complete WGS directory before replacing a save. WGS metadata and Xbox cloud synchronization are managed by the Xbox app; export the edited blob under its original filename and replace it in the original directory while the game is closed.
 
 ## Configuration
