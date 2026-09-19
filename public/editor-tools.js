@@ -20,12 +20,14 @@
   }
   const label = key => String(key).replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
 
-  // Dragonwilds uses a flatter curve than RuneScape. Level 63 starts at
-  // 103,735 XP (the next-level threshold shown for level 62 in-game).
-  const LEVEL_63_XP = 103735;
+  // Curve calibrated against the in-game thresholds supplied by players:
+  // level 63 starts at 103,735 XP and level 80 starts at 223,122 XP.
+  const XP_CURVE_EXPONENT = Math.log(223122 / 103735) / Math.log(79 / 62);
+  const XP_CURVE_SCALE = 103735 / (62 ** XP_CURVE_EXPONENT);
   function xpForLevel(level) {
     const target = Math.max(1, Math.min(99, Math.trunc(Number(level) || 1)));
-    return Math.floor(((target - 1) ** 2 * LEVEL_63_XP) / (62 ** 2));
+    if (target === 1) return 0;
+    return Math.round(XP_CURVE_SCALE * ((target - 1) ** XP_CURVE_EXPONENT));
   }
 
   function levelForXp(xp) {
@@ -46,21 +48,33 @@
 
   function findSkills(root) {
     const results = [];
-    const skillNames = /^(attack|magic|ranged|woodcutting|mining|artisan|construction|cooking|farming|crafting|smithing|fishing)$/i;
-    const nonSkills = /(walk|distance|travel|telemetry|time|duration|coordinate|location)/i;
+    const skills = [
+      ['Attack', ['attack']], ['Magic', ['magic']], ['Range', ['range', 'ranged']],
+      ['Mining', ['mining']], ['Woodcutting', ['woodcutting']], ['Artisan', ['artisan']],
+      ['Construction', ['construction']], ['Cooking', ['cooking']],
+      ['RuneCrafting', ['runecrafting', 'runecraft']], ['Farming', ['farming']],
+      ['Fishing', ['fishing']], ['Agility', ['agility']]
+    ];
+    const identify = value => {
+      const normalized = String(value).replace(/(xp|experience)$/i, '').replace(/[^a-z]/gi, '').toLowerCase();
+      return skills.find(([, aliases]) => aliases.includes(normalized));
+    };
     walk(root, (value, path) => {
       for (const [key, child] of Object.entries(value)) {
         const strippedKey = key.replace(/(xp|experience)$/i, '');
-        const inSkillContainer = /skills?|experience/i.test(path.at(-1) || '');
-        if (typeof child === 'number' && /(xp|experience)$/i.test(key) && !nonSkills.test(key) && (skillNames.test(strippedKey) || inSkillContainer)) {
-          results.push({ name: label(strippedKey || path.at(-1) || 'Skill'), xpPath: [...path, key], xp: child });
-        } else if (/skills?/i.test(path.at(-1) || '') && isObject(child)) {
+        const flatSkill = identify(strippedKey);
+        const nestedSkill = identify(key);
+        if (typeof child === 'number' && /(xp|experience)$/i.test(key) && flatSkill) {
+          results.push({ name: flatSkill[0], xpPath: [...path, key], xp: child });
+        } else if (/skills?/i.test(path.at(-1) || '') && isObject(child) && nestedSkill) {
           const xpKey = Object.keys(child).find(field => /^(xp|experience)$/i.test(field));
-          if (xpKey && typeof child[xpKey] === 'number') results.push({ name: label(key), xpPath: [...path, key, xpKey], xp: child[xpKey] });
+          if (xpKey && typeof child[xpKey] === 'number') results.push({ name: nestedSkill[0], xpPath: [...path, key, xpKey], xp: child[xpKey] });
         }
       }
     });
-    return results.filter((entry, index) => results.findIndex(other => other.xpPath.join('.') === entry.xpPath.join('.')) === index);
+    return results
+      .filter((entry, index) => results.findIndex(other => other.xpPath.join('.') === entry.xpPath.join('.')) === index)
+      .sort((a, b) => skills.findIndex(([name]) => name === a.name) - skills.findIndex(([name]) => name === b.name));
   }
 
   function findItemCatalog(root) {

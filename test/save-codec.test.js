@@ -33,8 +33,17 @@ test('rejects unsupported binary data', () => {
 test('calculates Dragonwilds levels from XP shown in game', () => {
   assert.equal(xpForLevel(1), 0);
   assert.equal(xpForLevel(63), 103735);
+  assert.equal(xpForLevel(80), 223122);
   assert.equal(levelForXp(103102), 62);
   assert.equal(levelForXp(103735), 63);
+  assert.equal(levelForXp(219160), 79);
+  assert.equal(levelForXp(223122), 80);
+});
+
+test('returns only the twelve Dragonwilds skills in game order', () => {
+  const names = ['Agility', 'Fishing', 'Farming', 'RuneCrafting', 'Cooking', 'Construction', 'Artisan', 'Woodcutting', 'Mining', 'Range', 'Magic', 'Attack'];
+  const save = { skills: Object.fromEntries(names.map(name => [name, { experience: 100 }]).concat([['walkingDistance', { experience: 999999 }]])) };
+  assert.deepEqual(findSkills(save).map(skill => skill.name), ['Attack', 'Magic', 'Range', 'Mining', 'Woodcutting', 'Artisan', 'Construction', 'Cooking', 'RuneCrafting', 'Farming', 'Fishing', 'Agility']);
 });
 
 test('discovers structured editor data in nested saves', () => {
@@ -43,6 +52,6 @@ test('discovers structured editor data in nested saves', () => {
   assert.equal(findStats(save)[0].name, 'Health');
   assert.equal(findSkills(save)[0].name, 'Woodcutting');
   assert.equal(findSkills(save).length, 1);
-  assert.equal(levelForXp(findSkills(save)[0].xp), 7);
+  assert.equal(levelForXp(findSkills(save)[0].xp), 15);
   assert.equal(findItemCatalog(save)[0].name, 'Bronze Axe');
 });
