@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101712">
+  <title>Dragonwilds Save Editor</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Dragonwilds Save Editor home">
+      <span class="brand-mark">DW</span>
+      <span><strong>DRAGONWILDS</strong><small>SAVE EDITOR</small></span>
+    </a>
+    <span class="local-badge"><i></i> LOCAL SESSION</span>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="eyebrow">RUNESCAPE: DRAGONWILDS</p>
+      <h1>Shape your <em>world.</em></h1>
+      <p class="lede">Decode, inspect and edit your Xbox Game Pass save. Your file is processed only by this editor—never stored.</p>
+    </section>
+
+    <section id="uploadView" class="workspace">
+      <div class="stepper" aria-label="Workflow"><span class="active">1</span><b>SELECT SAVE</b><hr><span>2</span><b>EDIT DATA</b><hr><span>3</span><b>EXPORT</b></div>
+      <label id="dropzone" class="dropzone">
+        <input id="fileInput" type="file" hidden>
+        <span class="rune-icon">⌁</span>
+        <strong>Drop your WGS save file here</strong>
+        <small>or click to browse your files</small>
+        <span class="choose">CHOOSE SAVE FILE</span>
+        <small class="hint">Select the extensionless GUID data file, not <code>container.index</code> · Max 100 MB</small>
+      </label>
+      <div class="notice"><strong>Before you begin</strong><p>Close Dragonwilds and make a backup of your WGS save folder. Xbox cloud sync may overwrite edits; launch the game offline first, then choose the local save when prompted.</p></div>
+    </section>
+
+    <section id="editorView" class="editor-view" hidden>
+      <div class="filebar">
+        <div><span class="file-icon">◆</span><strong id="filename">save</strong><small id="filemeta"></small></div>
+        <button id="changeFile" class="ghost">CHANGE FILE</button>
+      </div>
+      <div class="editor-head">
+        <div><p class="eyebrow">SAVE DATA</p><h2>Edit JSON</h2></div>
+        <div class="actions"><button id="formatBtn" class="ghost">FORMAT JSON</button><button id="downloadBtn" class="primary">EXPORT WGS SAVE</button></div>
+      </div>
+      <div class="editor-shell">
+        <div class="gutter" id="lines">1</div>
+        <textarea id="jsonEditor" spellcheck="false" aria-label="Save JSON editor"></textarea>
+      </div>
+      <div class="statusbar"><span id="status">Ready</span><span id="position">Ln 1, Col 1</span></div>
+    </section>
+  </main>
+  <footer><span>DRAGONWILDS SAVE EDITOR</span><span>Community tool · Not affiliated with Jagex</span></footer>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
