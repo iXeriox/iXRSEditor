@@ -174,15 +174,12 @@
         const xpKey = Object.keys(value).find(field => /^(xp|experience|value|amount)$/i.test(field) && typeof value[field] === 'number');
         if (xpKey) results.push(skillResult(identifiedObject, value, path, xpKey));
       }
-      const inSkillsCollection = path.some(part => /^skills?$/i.test(String(part)));
-      if (!identifiedObject && inSkillsCollection && objectId != null) {
+      // Keep this predicate local to the record check. Besides being clearer,
+      // this avoids colliding with similarly named bindings when patches from
+      // older editor builds are merged together.
+      if (!identifiedObject && path.some(part => /^skills?$/i.test(String(part))) && objectId != null) {
         const xpKey = Object.keys(value).find(field => /^(xp|experience)$/i.test(field) && typeof value[field] === 'number');
         if (xpKey) results.push(skillResult({ name: null, id: String(objectId) }, value, path, xpKey));
-      }
-      const inSkillsCollection = path.some(part => /^skills?$/i.test(String(part)));
-      if (!identifiedObject && inSkillsCollection && objectId != null) {
-        const xpKey = Object.keys(value).find(field => /^(xp|experience)$/i.test(field) && typeof value[field] === 'number');
-        if (xpKey) results.push({ name: null, id: String(objectId), xpPath: [...path, xpKey], xp: value[xpKey] });
       }
       for (const [key, child] of Object.entries(value)) {
         const strippedKey = key.replace(/(xp|experience)$/i, '');

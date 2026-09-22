@@ -3,6 +3,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const zlib = require('node:zlib');
+const fs = require('node:fs');
+const vm = require('node:vm');
 const { decodeSave, encodeSave } = require('../lib/save-codec');
 const {
   SKILLS, findInventories, findSkills, findStats, findItemCatalog, findItemIdentity, slotInfo, levelForXp, xpForLevel,
@@ -10,6 +12,12 @@ const {
 } = require('../public/editor-tools');
 
 const example = { player: { name: 'Ember', level: 42 }, inventory: [1, 2] };
+
+test('editor tools script parses and exposes its browser global', () => {
+  const browser = {};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../public/editor-tools'), 'utf8'), browser);
+  assert.equal(typeof browser.EditorTools.findSkills, 'function');
+});
 
 test('round trips plain JSON', () => {
   const decoded = decodeSave(Buffer.from(JSON.stringify(example)));
