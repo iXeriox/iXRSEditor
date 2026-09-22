@@ -155,6 +155,14 @@
 
   function findSkills(root) {
     const results = [];
+    const skillResult = (skill, value, path, xpKey) => {
+      const levelKey = Object.keys(value).find(field => /^level$/i.test(field) && typeof value[field] === 'number');
+      return {
+        name: skill.name, id: skill.id, xpPath: [...path, xpKey], xp: value[xpKey],
+        levelPath: levelKey ? [...path, levelKey] : null,
+        level: levelKey ? value[levelKey] : null
+      };
+    };
     const identify = value => {
       const normalized = String(value).replace(/(xp|experience)$/i, '').replace(/[^a-z]/gi, '').toLowerCase();
       return SKILLS.find(skill => skill.id === value || skill.aliases.includes(normalized));
@@ -164,7 +172,12 @@
       const identifiedObject = identify(objectId) || identify(value.Name ?? value.name ?? '');
       if (identifiedObject) {
         const xpKey = Object.keys(value).find(field => /^(xp|experience|value|amount)$/i.test(field) && typeof value[field] === 'number');
-        if (xpKey) results.push({ name: identifiedObject.name, id: identifiedObject.id, xpPath: [...path, xpKey], xp: value[xpKey] });
+        if (xpKey) results.push(skillResult(identifiedObject, value, path, xpKey));
+      }
+      const inSkillsCollection = path.some(part => /^skills?$/i.test(String(part)));
+      if (!identifiedObject && inSkillsCollection && objectId != null) {
+        const xpKey = Object.keys(value).find(field => /^(xp|experience)$/i.test(field) && typeof value[field] === 'number');
+        if (xpKey) results.push(skillResult({ name: null, id: String(objectId) }, value, path, xpKey));
       }
       const inSkillsCollection = path.some(part => /^skills?$/i.test(String(part)));
       if (!identifiedObject && inSkillsCollection && objectId != null) {
@@ -181,7 +194,7 @@
           results.push({ name: nestedSkill.name, id: nestedSkill.id, xpPath: [...path, key], xp: child });
         } else if (/skills?/i.test(path.at(-1) || '') && isObject(child) && nestedSkill) {
           const xpKey = Object.keys(child).find(field => /^(xp|experience)$/i.test(field));
-          if (xpKey && typeof child[xpKey] === 'number') results.push({ name: nestedSkill.name, id: nestedSkill.id, xpPath: [...path, key, xpKey], xp: child[xpKey] });
+          if (xpKey && typeof child[xpKey] === 'number') results.push(skillResult(nestedSkill, child, [...path, key], xpKey));
         }
       }
     });

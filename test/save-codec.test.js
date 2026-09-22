@@ -58,6 +58,14 @@ test('discovers skills by Dragonwilds IDs in maps and records', () => {
   assert.deepEqual(findSkills(save).map(skill => [skill.name, skill.xp]), [['Attack', 103102], ['Magic', 219160]]);
 });
 
+test('uses an explicit saved skill level instead of inferring it from XP', () => {
+  const save = { skills: [{ Id: '0hreSMRVXUihq9qjDO2CFA', Experience: 219160, Level: 96 }] };
+  const [magic] = findSkills(save);
+  assert.equal(magic.name, 'Magic');
+  assert.equal(magic.level, 96);
+  assert.deepEqual(magic.levelPath, ['skills', '0', 'Level']);
+});
+
 test('discovers structured editor data in nested saves', () => {
   const save = { player: { health: 80, walkingDistanceExperience: 999999, inventory: [{ itemId: 'axe', name: 'Bronze Axe', quantity: 2 }], skills: { woodcutting: { xp: 1000 } } } };
   assert.equal(findInventories(save)[0].items[0].itemId, 'axe');
