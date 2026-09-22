@@ -578,7 +578,10 @@ function renderSkills() {
   skills.forEach(skill => {
     const displayName = skillDisplayName(skill);
     const card = document.createElement('article'); card.className = 'skill-card';
-    const level = levelForXp(skill.xp);
+    // Some saves persist the authoritative level beside XP. Prefer it because
+    // Dragonwilds' XP representation is not consistent across save versions.
+    const hasSavedLevel = skill.levelPath && Number.isFinite(skill.level);
+    const level = hasSavedLevel ? skill.level : levelForXp(skill.xp);
     const top = document.createElement('div'); top.className = 'skill-top';
     const name = document.createElement('strong'); name.textContent = displayName; name.title = skill.name ? '' : skill.id;
     const badge = document.createElement('span');
@@ -587,31 +590,34 @@ function renderSkills() {
     const fields = document.createElement('div'); fields.className = 'skill-fields';
     const note = document.createElement('small');
 
-    // Level and XP represent the same underlying value—editing either updates the other and the progress bar in place.
-    function refreshDerived(xp) {
-      const newLevel = levelForXp(xp);
+    function refreshDerived(xp, savedLevel = null) {
+      const newLevel = Number.isFinite(savedLevel) ? savedLevel : levelForXp(xp);
       badge.textContent = `LEVEL ${newLevel}`;
+      progress.hidden = Number.isFinite(savedLevel);
       progress.max = newLevel === 99 ? 1 : xpForLevel(newLevel + 1) - xpForLevel(newLevel);
       progress.value = newLevel === 99 ? 1 : xp - xpForLevel(newLevel);
-      note.textContent = newLevel === 99 ? 'Maximum level reached' : `${Math.max(0, xpForLevel(newLevel + 1) - xp).toLocaleString()} XP to level ${newLevel + 1}`;
+      note.textContent = Number.isFinite(savedLevel)
+        ? 'Level read directly from the save'
+        : (newLevel === 99 ? 'Maximum level reached' : `${Math.max(0, xpForLevel(newLevel + 1) - xp).toLocaleString()} XP to level ${newLevel + 1}`);
       return newLevel;
     }
     const levelStepper = numberStepper('Level (1–99)', level, { min: 1, max: 99 }, newLevel => {
       pushHistory();
-      const newXp = xpForLevel(newLevel);
-      setAt(saveData, skill.xpPath, newXp);
+      if (hasSavedLevel) setAt(saveData, skill.levelPath, newLevel);
+      else setAt(saveData, skill.xpPath, xpForLevel(newLevel));
       markChanged();
-      xpStepper.setValue(newXp);
-      refreshDerived(newXp);
+      if (!hasSavedLevel) xpStepper.setValue(xpForLevel(newLevel));
+      refreshDerived(Number(xpStepper.input.value), hasSavedLevel ? newLevel : null);
     });
     const xpStepper = numberStepper('Experience', skill.xp, { min: 0 }, newXp => {
       pushHistory();
       setAt(saveData, skill.xpPath, newXp);
       markChanged();
-      levelStepper.setValue(refreshDerived(newXp));
+      if (!hasSavedLevel) levelStepper.setValue(refreshDerived(newXp));
+      else refreshDerived(newXp, Number(levelStepper.input.value));
     });
     fields.append(levelStepper.row, xpStepper.row);
-    refreshDerived(skill.xp);
+    refreshDerived(skill.xp, hasSavedLevel ? level : null);
     card.append(top, progress, fields, note); grid.append(card);
   }); panel.append(grid);
 }

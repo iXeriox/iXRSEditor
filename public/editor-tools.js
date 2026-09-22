@@ -89,14 +89,80 @@
     const results = [];
     walk(root, (value, path) => {
       for (const [key, child] of Object.entries(value)) {
-        if (Array.isArray(child) && /(inventory|backpack|storage|bank|items|slots)/i.test(key)) results.push({ name: label(key), path: [...path, key], items: child });
+        if (!/(inventory|backpack|storage|bank|items|slots)/i.test(key)) continue;
+        if (Array.isArray(child)) {
+          // Progress logs such as ItemsPickedUp are not editable inventories.
+          if (child.length && !child.some(isObject)) continue;
+          results.push({ name: label(key), path: [...path, key], kind: 'array', raw: child, items: child });
+          continue;
+        }
+        if (!isObject(child)) continue;
+        const slotNumbers = Object.keys(child).filter(field => /^\d+$/.test(field)).map(Number).sort((a, b) => a - b);
+        if (!slotNumbers.length && !Object.hasOwn(child, 'MaxSlotIndex')) continue;
+        results.push({
+          name: label(key), path: [...path, key], kind: 'slotmap', raw: child,
+          items: slotNumbers.map(slot => child[String(slot)]), slotNumbers
+        });
       }
     });
-    return results.filter((entry, index) => results.findIndex(other => other.items === entry.items) === index);
+    return results.filter((entry, index) => results.findIndex(other => other.raw === entry.raw) === index);
+  }
+
+  function nextFreeSlot(group) {
+    const occupied = new Set(group.slotNumbers);
+    for (let slot = 0; ; slot += 1) if (!occupied.has(slot)) return slot;
+  }
+
+  function inventoryAdd(group, item) {
+    if (group.kind !== 'slotmap') {
+      group.items.push(item);
+      group.slotNumbers?.push(group.items.length - 1);
+      return group.items.length - 1;
+    }
+    const slot = nextFreeSlot(group);
+    group.raw[String(slot)] = item;
+    const index = group.slotNumbers.findIndex(existing => existing > slot);
+    const insertAt = index < 0 ? group.items.length : index;
+    group.slotNumbers.splice(insertAt, 0, slot);
+    group.items.splice(insertAt, 0, item);
+    if (typeof group.raw.MaxSlotIndex === 'number') group.raw.MaxSlotIndex = Math.max(group.raw.MaxSlotIndex, slot);
+    return insertAt;
+  }
+
+  function inventoryRemoveAt(group, index) {
+    if (group.kind === 'slotmap') {
+      delete group.raw[String(group.slotNumbers[index])];
+      group.slotNumbers.splice(index, 1);
+    }
+    return group.items.splice(index, 1)[0];
+  }
+
+  function inventoryReplaceAt(group, index, item) {
+    if (group.kind === 'slotmap') group.raw[String(group.slotNumbers[index])] = item;
+    group.items[index] = item;
+    return item;
+  }
+
+  function inventoryDuplicateAt(group, index) {
+    const copy = structuredClone(group.items[index]);
+    if (group.kind !== 'slotmap') {
+      group.items.splice(index + 1, 0, copy);
+      group.slotNumbers?.splice(index + 1, 0, index + 1);
+      return index + 1;
+    }
+    return inventoryAdd(group, copy);
   }
 
   function findSkills(root) {
     const results = [];
+    const skillResult = (skill, value, path, xpKey) => {
+      const levelKey = Object.keys(value).find(field => /^level$/i.test(field) && typeof value[field] === 'number');
+      return {
+        name: skill.name, id: skill.id, xpPath: [...path, xpKey], xp: value[xpKey],
+        levelPath: levelKey ? [...path, levelKey] : null,
+        level: levelKey ? value[levelKey] : null
+      };
+    };
     const identify = value => {
       const normalized = String(value).replace(/(xp|experience)$/i, '').replace(/[^a-z]/gi, '').toLowerCase();
       return SKILLS.find(skill => skill.id === value || skill.aliases.includes(normalized));
@@ -106,7 +172,14 @@
       const identifiedObject = identify(objectId) || identify(value.Name ?? value.name ?? '');
       if (identifiedObject) {
         const xpKey = Object.keys(value).find(field => /^(xp|experience|value|amount)$/i.test(field) && typeof value[field] === 'number');
-        if (xpKey) results.push({ name: identifiedObject.name, id: identifiedObject.id, xpPath: [...path, xpKey], xp: value[xpKey] });
+        if (xpKey) results.push(skillResult(identifiedObject, value, path, xpKey));
+      }
+      // Keep this predicate local to the record check. Besides being clearer,
+      // this avoids colliding with similarly named bindings when patches from
+      // older editor builds are merged together.
+      if (!identifiedObject && path.some(part => /^skills?$/i.test(String(part))) && objectId != null) {
+        const xpKey = Object.keys(value).find(field => /^(xp|experience)$/i.test(field) && typeof value[field] === 'number');
+        if (xpKey) results.push(skillResult({ name: null, id: String(objectId) }, value, path, xpKey));
       }
       for (const [key, child] of Object.entries(value)) {
         const strippedKey = key.replace(/(xp|experience)$/i, '');
@@ -118,13 +191,17 @@
           results.push({ name: nestedSkill.name, id: nestedSkill.id, xpPath: [...path, key], xp: child });
         } else if (/skills?/i.test(path.at(-1) || '') && isObject(child) && nestedSkill) {
           const xpKey = Object.keys(child).find(field => /^(xp|experience)$/i.test(field));
-          if (xpKey && typeof child[xpKey] === 'number') results.push({ name: nestedSkill.name, id: nestedSkill.id, xpPath: [...path, key, xpKey], xp: child[xpKey] });
+          if (xpKey && typeof child[xpKey] === 'number') results.push(skillResult(nestedSkill, child, [...path, key], xpKey));
         }
       }
     });
     return results
       .filter((entry, index) => results.findIndex(other => other.xpPath.join('.') === entry.xpPath.join('.')) === index)
-      .sort((a, b) => SKILLS.findIndex(skill => skill.name === a.name) - SKILLS.findIndex(skill => skill.name === b.name));
+      .sort((a, b) => {
+        const aIndex = SKILLS.findIndex(skill => skill.name === a.name);
+        const bIndex = SKILLS.findIndex(skill => skill.name === b.name);
+        return (aIndex < 0 ? SKILLS.length : aIndex) - (bIndex < 0 ? SKILLS.length : bIndex);
+      });
   }
 
   function findItemCatalog(root) {
@@ -144,14 +221,21 @@
 
   function findStats(root) {
     const results = [];
-    const matcher = /^(health|hp|maxhealth|stamina|mana|armou?r|weight|carryweight|hunger|thirst|energy|coins?|gold|level)$/i;
+    const matcher = /^(health|hp|maxhealth|stamina|mana|armou?r|weight|carryweight|hunger|thirst|sustenance|hydration|energy|specialcharge|coins?|gold|level)$/i;
     walk(root, (value, path) => {
       for (const [key, child] of Object.entries(value)) {
         if ((typeof child === 'number' || typeof child === 'boolean') && matcher.test(key)) results.push({ name: label(key), path: [...path, key], value: child });
+        if (!isObject(child) || Array.isArray(child) || !matcher.test(key)) continue;
+        const valueKey = Object.keys(child).find(field => /^(current)?value$|^(health|sustenance|hydration)value$/i.test(field) && ['number', 'boolean'].includes(typeof child[field]));
+        if (valueKey) results.push({ name: label(key), path: [...path, key, valueKey], value: child[valueKey] });
       }
     });
     return results;
   }
 
-  return { SKILLS, SLOT_RANGES, slotInfo, findItemIdentity, findInventories, findSkills, findStats, findItemCatalog, getAt, setAt, label, xpForLevel, levelForXp };
+  return {
+    SKILLS, SLOT_RANGES, slotInfo, findItemIdentity, findInventories, findSkills, findStats, findItemCatalog,
+    inventoryAdd, inventoryRemoveAt, inventoryReplaceAt, inventoryDuplicateAt,
+    getAt, setAt, label, xpForLevel, levelForXp
+  };
 }));

@@ -6,7 +6,7 @@ const path = require('node:path');
 const { decodeSave, encodeSave } = require('./lib/save-codec');
 const { loadCatalog } = require('./lib/data-catalog');
 
-const PORT = Number(process.env.PORT) || 9898;
+const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 const MAX_BODY = 100 * 1024 * 1024;
 const publicDir = path.join(__dirname, 'public');
@@ -38,7 +38,14 @@ function serveStatic(req, res) {
   if (!file.startsWith(`${publicDir}${path.sep}`)) return jsonResponse(res, 403, { error: 'Forbidden' });
   fs.readFile(file, (error, data) => {
     if (error) return jsonResponse(res, 404, { error: 'Not found' });
-    res.writeHead(200, { 'content-type': mime[path.extname(file)] || 'application/octet-stream', 'content-length': data.length });
+    // Editor scripts and markup must update together. Revalidating these files
+    // prevents an old, broken editor-tools.js from leaving app.js without the
+    // global EditorTools object after a deployment.
+    res.writeHead(200, {
+      'content-type': mime[path.extname(file)] || 'application/octet-stream',
+      'content-length': data.length,
+      'cache-control': 'no-cache'
+    });
     res.end(data);
   });
 }
