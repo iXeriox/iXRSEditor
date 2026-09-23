@@ -85,84 +85,109 @@
     return 1;
   }
 
+  // Matches array/object keys that hold player-facing item slots. "loadout"
+  // and "equip(ment)" cover gear slots; the rest cover general storage.
+  const INVENTORY_KEY_PATTERN = /(inventory|backpack|storage|bank|items|slots|loadout|equip(ment)?|hotbar)/i;
+
+  /**
+   * True for a plain object that represents a *slot map*: item records keyed
+   * by their numeric slot index (e.g. {"0": {...}, "1": {...}, "MaxSlotIndex": 90})
+   * instead of a JS array. Dragonwilds stores its live Inventory, Loadout and
+   * PersonalInventory this way, so treating only Array.isArray(child) as
+   * "an inventory" misses every real one.
+   */
+  function isSlotMapContainer(value) {
+    if (!isObject(value) || Array.isArray(value)) return false;
+    const keys = Object.keys(value);
+    if (!keys.length) return false;
+    const numericKeys = keys.filter(key => /^\d+$/.test(key));
+    const otherKeys = keys.filter(key => !/^\d+$/.test(key));
+    if (numericKeys.length) return otherKeys.every(key => key === 'MaxSlotIndex');
+    return keys.length === 1 && keys[0] === 'MaxSlotIndex'; // an empty slot map
+  }
+
+  function slotMapIndices(value) {
+    return Object.keys(value).filter(key => /^\d+$/.test(key)).map(Number).sort((a, b) => a - b);
+  }
+
   function findInventories(root) {
     const results = [];
     walk(root, (value, path) => {
       for (const [key, child] of Object.entries(value)) {
-        if (!/(inventory|backpack|storage|bank|items|slots)/i.test(key)) continue;
+        if (!INVENTORY_KEY_PATTERN.test(key)) continue;
         if (Array.isArray(child)) {
-          // Progress logs such as ItemsPickedUp are not editable inventories.
-          if (child.length && !child.some(isObject)) continue;
-          results.push({ name: label(key), path: [...path, key], kind: 'array', raw: child, items: child });
-          continue;
+          // A plain array of IDs/strings (e.g. an "items picked up" log) isn't
+          // an editable inventory of item records—skip it so it doesn't
+          // shadow the real, object-keyed inventory elsewhere in the save.
+          if (child.length && !child.every(isObject)) continue;
+          results.push({ name: label(key), path: [...path, key], kind: 'array', items: child, slotNumbers: child.map((_, index) => index) });
+        } else if (isSlotMapContainer(child)) {
+          const slotNumbers = slotMapIndices(child);
+          results.push({
+            name: label(key), path: [...path, key], kind: 'slotmap', raw: child,
+            items: slotNumbers.map(slot => child[String(slot)]), slotNumbers
+          });
         }
-        if (!isObject(child)) continue;
-        const slotNumbers = Object.keys(child).filter(field => /^\d+$/.test(field)).map(Number).sort((a, b) => a - b);
-        if (!slotNumbers.length && !Object.hasOwn(child, 'MaxSlotIndex')) continue;
-        results.push({
-          name: label(key), path: [...path, key], kind: 'slotmap', raw: child,
-          items: slotNumbers.map(slot => child[String(slot)]), slotNumbers
-        });
       }
     });
-    return results.filter((entry, index) => results.findIndex(other => other.raw === entry.raw) === index);
+    return results.filter((entry, index) => results.findIndex(other => other.path.join('.') === entry.path.join('.')) === index);
   }
 
-  function nextFreeSlot(group) {
-    const occupied = new Set(group.slotNumbers);
-    for (let slot = 0; ; slot += 1) if (!occupied.has(slot)) return slot;
+  /** Finds the lowest unused numeric slot in a slot-map container. */
+  function inventoryFreeSlot(raw) {
+    const used = new Set(slotMapIndices(raw));
+    let slot = 0;
+    while (used.has(slot)) slot += 1;
+    return slot;
   }
 
-  function inventoryAdd(group, item) {
-    if (group.kind !== 'slotmap') {
-      group.items.push(item);
-      group.slotNumbers?.push(group.items.length - 1);
-      return group.items.length - 1;
-    }
-    const slot = nextFreeSlot(group);
-    group.raw[String(slot)] = item;
-    const index = group.slotNumbers.findIndex(existing => existing > slot);
-    const insertAt = index < 0 ? group.items.length : index;
-    group.slotNumbers.splice(insertAt, 0, slot);
-    group.items.splice(insertAt, 0, item);
-    if (typeof group.raw.MaxSlotIndex === 'number') group.raw.MaxSlotIndex = Math.max(group.raw.MaxSlotIndex, slot);
-    return insertAt;
+  function inventoryBumpMax(raw, slot) {
+    if (typeof raw.MaxSlotIndex === 'number' && slot > raw.MaxSlotIndex) raw.MaxSlotIndex = slot;
   }
 
+  /** Overwrites the item at a group's logical index, writing through to the real slot key for slot maps. */
+  function inventoryReplaceAt(group, index, value) {
+    if (group.kind === 'slotmap') group.raw[String(group.slotNumbers[index])] = value;
+    group.items[index] = value;
+  }
+
+  /** Removes the item at a group's logical index, deleting the underlying slot key for slot maps. */
   function inventoryRemoveAt(group, index) {
     if (group.kind === 'slotmap') {
       delete group.raw[String(group.slotNumbers[index])];
       group.slotNumbers.splice(index, 1);
     }
-    return group.items.splice(index, 1)[0];
+    group.items.splice(index, 1);
   }
 
-  function inventoryReplaceAt(group, index, item) {
-    if (group.kind === 'slotmap') group.raw[String(group.slotNumbers[index])] = item;
-    group.items[index] = item;
-    return item;
-  }
-
-  function inventoryDuplicateAt(group, index) {
-    const copy = structuredClone(group.items[index]);
-    if (group.kind !== 'slotmap') {
-      group.items.splice(index + 1, 0, copy);
-      group.slotNumbers?.splice(index + 1, 0, index + 1);
-      return index + 1;
+  /** Inserts a new item, picking the next free slot for slot maps. Returns the new logical index. */
+  function inventoryInsertAt(group, index, value) {
+    if (group.kind === 'slotmap') {
+      const slot = inventoryFreeSlot(group.raw);
+      group.raw[String(slot)] = value;
+      inventoryBumpMax(group.raw, slot);
+      const insertAt = group.slotNumbers.findIndex(existing => existing > slot);
+      const at = insertAt === -1 ? group.slotNumbers.length : insertAt;
+      group.slotNumbers.splice(at, 0, slot);
+      group.items.splice(at, 0, value);
+      return at;
     }
-    return inventoryAdd(group, copy);
+    group.items.splice(index, 0, value);
+    return index;
+  }
+
+  /** Appends a new item to the end of a group (or the next free slot for slot maps). */
+  function inventoryAdd(group, value) {
+    return group.kind === 'slotmap' ? inventoryInsertAt(group, group.items.length, value) : (group.items.push(value), group.items.length - 1);
+  }
+
+  /** Duplicates the item at a logical index. Returns the new logical index. */
+  function inventoryDuplicateAt(group, index) {
+    return inventoryInsertAt(group, index + 1, structuredClone(group.items[index]));
   }
 
   function findSkills(root) {
     const results = [];
-    const skillResult = (skill, value, path, xpKey) => {
-      const levelKey = Object.keys(value).find(field => /^level$/i.test(field) && typeof value[field] === 'number');
-      return {
-        name: skill.name, id: skill.id, xpPath: [...path, xpKey], xp: value[xpKey],
-        levelPath: levelKey ? [...path, levelKey] : null,
-        level: levelKey ? value[levelKey] : null
-      };
-    };
     const identify = value => {
       const normalized = String(value).replace(/(xp|experience)$/i, '').replace(/[^a-z]/gi, '').toLowerCase();
       return SKILLS.find(skill => skill.id === value || skill.aliases.includes(normalized));
@@ -170,16 +195,19 @@
     walk(root, (value, path) => {
       const objectId = value.Id ?? value.id ?? value.SkillId ?? value.skillId;
       const identifiedObject = identify(objectId) || identify(value.Name ?? value.name ?? '');
-      if (identifiedObject) {
+      // path.at(-2) is the key of the array/object this record lives directly
+      // inside—e.g. GameProgress.Skills.Skills[i] has path [...,'Skills', i],
+      // so at(-2) is 'Skills'. Used below to surface skill IDs the hardcoded
+      // SKILLS table doesn't recognise (this save's data has two: the table
+      // only ships confirmed IDs for 10 of the 12 playable skills).
+      const inSkillsContainer = /^skills?$/i.test(path.at(-2) || '');
+      if (identifiedObject || (inSkillsContainer && typeof objectId === 'string' && objectId)) {
         const xpKey = Object.keys(value).find(field => /^(xp|experience|value|amount)$/i.test(field) && typeof value[field] === 'number');
-        if (xpKey) results.push(skillResult(identifiedObject, value, path, xpKey));
-      }
-      // Keep this predicate local to the record check. Besides being clearer,
-      // this avoids colliding with similarly named bindings when patches from
-      // older editor builds are merged together.
-      if (!identifiedObject && path.some(part => /^skills?$/i.test(String(part))) && objectId != null) {
-        const xpKey = Object.keys(value).find(field => /^(xp|experience)$/i.test(field) && typeof value[field] === 'number');
-        if (xpKey) results.push(skillResult({ name: null, id: String(objectId) }, value, path, xpKey));
+        if (xpKey) {
+          results.push(identifiedObject
+            ? { name: identifiedObject.name, id: identifiedObject.id, xpPath: [...path, xpKey], xp: value[xpKey] }
+            : { name: null, id: objectId, xpPath: [...path, xpKey], xp: value[xpKey] });
+        }
       }
       for (const [key, child] of Object.entries(value)) {
         const strippedKey = key.replace(/(xp|experience)$/i, '');
@@ -191,16 +219,15 @@
           results.push({ name: nestedSkill.name, id: nestedSkill.id, xpPath: [...path, key], xp: child });
         } else if (/skills?/i.test(path.at(-1) || '') && isObject(child) && nestedSkill) {
           const xpKey = Object.keys(child).find(field => /^(xp|experience)$/i.test(field));
-          if (xpKey && typeof child[xpKey] === 'number') results.push(skillResult(nestedSkill, child, [...path, key], xpKey));
+          if (xpKey && typeof child[xpKey] === 'number') results.push({ name: nestedSkill.name, id: nestedSkill.id, xpPath: [...path, key, xpKey], xp: child[xpKey] });
         }
       }
     });
     return results
       .filter((entry, index) => results.findIndex(other => other.xpPath.join('.') === entry.xpPath.join('.')) === index)
       .sort((a, b) => {
-        const aIndex = SKILLS.findIndex(skill => skill.name === a.name);
-        const bIndex = SKILLS.findIndex(skill => skill.name === b.name);
-        return (aIndex < 0 ? SKILLS.length : aIndex) - (bIndex < 0 ? SKILLS.length : bIndex);
+        const rank = entry => { const found = SKILLS.findIndex(skill => skill.name === entry.name); return found === -1 ? SKILLS.length : found; };
+        return rank(a) - rank(b);
       });
   }
 
@@ -221,13 +248,22 @@
 
   function findStats(root) {
     const results = [];
-    const matcher = /^(health|hp|maxhealth|stamina|mana|armou?r|weight|carryweight|hunger|thirst|sustenance|hydration|energy|specialcharge|coins?|gold|level)$/i;
+    const matcher = /^(health|hp|maxhealth|stamina|mana|armou?r|weight|carryweight|hunger|thirst|energy|specialcharge|sustenance|hydration|coins?|gold|level)$/i;
+    // Some saves store a stat as a flat number (Health: 80). Others wrap it
+    // in a container object (Health: {CurrentValue: 80}, Sustenance:
+    // {SustenanceValue: 100, ...}); this field name detects the actual
+    // numeric value inside that container so the wrapped form isn't missed.
+    const containerValueField = (containerKey, child) => Object.keys(child).find(field =>
+      /^(currentvalue|value|amount)$/i.test(field) || new RegExp(`^${containerKey}(value)?$`, 'i').test(field));
     walk(root, (value, path) => {
       for (const [key, child] of Object.entries(value)) {
-        if ((typeof child === 'number' || typeof child === 'boolean') && matcher.test(key)) results.push({ name: label(key), path: [...path, key], value: child });
-        if (!isObject(child) || Array.isArray(child) || !matcher.test(key)) continue;
-        const valueKey = Object.keys(child).find(field => /^(current)?value$|^(health|sustenance|hydration)value$/i.test(field) && ['number', 'boolean'].includes(typeof child[field]));
-        if (valueKey) results.push({ name: label(key), path: [...path, key, valueKey], value: child[valueKey] });
+        if (!matcher.test(key)) continue;
+        if (typeof child === 'number' || typeof child === 'boolean') {
+          results.push({ name: label(key), path: [...path, key], value: child });
+        } else if (isObject(child) && !Array.isArray(child)) {
+          const field = containerValueField(key, child);
+          if (field && typeof child[field] === 'number') results.push({ name: label(key), path: [...path, key, field], value: child[field] });
+        }
       }
     });
     return results;
@@ -235,7 +271,7 @@
 
   return {
     SKILLS, SLOT_RANGES, slotInfo, findItemIdentity, findInventories, findSkills, findStats, findItemCatalog,
-    inventoryAdd, inventoryRemoveAt, inventoryReplaceAt, inventoryDuplicateAt,
-    getAt, setAt, label, xpForLevel, levelForXp
+    getAt, setAt, label, xpForLevel, levelForXp,
+    inventoryAdd, inventoryRemoveAt, inventoryReplaceAt, inventoryDuplicateAt
   };
 }));

@@ -220,11 +220,22 @@ function itemEntriesFromData() {
 }
 
 const normalizedId = value => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+/**
+ * Dragonwilds item IDs are case-sensitive base64-style tokens, so two
+ * different items could theoretically differ only by case—matching on a
+ * lowercased ID alone risks silently resolving to the wrong item. Try an
+ * exact match first and only fall back to the lenient, case-insensitive
+ * comparison (useful for minor formatting differences) if nothing exact is found.
+ */
 function catalogItemFor(id) {
-  const wanted = normalizedId(id);
+  if (id == null) return null;
+  const wanted = String(id);
   const items = itemEntriesFromData();
   const catalog = items.length ? items : dataCatalog;
-  return catalog.find(entry => normalizedId(entry.id) === wanted || normalizedId(entry.data?.Id) === wanted || normalizedId(entry.data?.itemId) === wanted || normalizedId(entry.data?.itemData) === wanted);
+  const exact = catalog.find(entry => entry.id === wanted || entry.data?.Id === wanted || entry.data?.itemId === wanted || entry.data?.itemData === wanted);
+  if (exact) return exact;
+  const loose = normalizedId(wanted);
+  return catalog.find(entry => normalizedId(entry.id) === loose || normalizedId(entry.data?.Id) === loose || normalizedId(entry.data?.itemId) === loose || normalizedId(entry.data?.itemData) === loose);
 }
 
 function itemFromCatalog(entry, sample) {
@@ -299,7 +310,7 @@ function stackProperty(item) {
 
 function stackCap(entry, item) {
   const cap = nestedProperty(entry?.data, (key, value) => typeof value === 'number' && /^(maxstack|stacklimit|maxquantity|capacity)$/i.test(key.replace(/[_-]/g, '')))
-      || nestedProperty(item, (key, value) => typeof value === 'number' && /^(maxstack|stacklimit|maxquantity|capacity)$/i.test(key.replace(/[_-]/g, '')));
+    || nestedProperty(item, (key, value) => typeof value === 'number' && /^(maxstack|stacklimit|maxquantity|capacity)$/i.test(key.replace(/[_-]/g, '')));
   return cap?.value ?? null;
 }
 
@@ -422,8 +433,8 @@ function renderInventory() {
     let previousSlotArea = null;
     group.items.forEach((item, index) => {
       const rangeLocation = group.slotNumbers?.[index]
-          ?? nestedProperty(item, (key, value) => typeof value === 'number' && key.replace(/[_-]/g, '').toLowerCase() === 'rangelocation')?.value
-          ?? inferredStart + index;
+        ?? nestedProperty(item, (key, value) => typeof value === 'number' && key.replace(/[_-]/g, '').toLowerCase() === 'rangelocation')?.value
+        ?? inferredStart + index;
       const slot = slotInfo(rangeLocation);
       if (slot.name !== previousSlotArea) {
         const rangeHeading = document.createElement('h5'); rangeHeading.className = 'slot-range-heading';
@@ -492,12 +503,13 @@ function renderInventory() {
       card.append(remove); cards.append(card);
     });
     search.addEventListener('input', () => cards.querySelectorAll('.item-card').forEach(card => { card.hidden = !card.dataset.search.includes(search.value.toLowerCase()); }));
-    cards.addEventListener('dragover', event => { if (event.target === cards) event.preventDefault(); });
+    cards.addEventListener('dragover', event => { if (!event.target.closest('.item-card')) event.preventDefault(); });
     cards.addEventListener('drop', event => {
-      if (event.target !== cards) return; event.preventDefault();
+      if (event.target.closest('.item-card')) return; event.preventDefault();
       const entry = catalogItemFor(event.dataTransfer.getData('application/x-dragonwilds-item'));
       if (entry) addCatalogItem(entry);
     });
+    if (!group.items.length) cards.append(emptyState('No items here yet', 'Drag an item from the catalog on the right, or click one to add it to this slot.'));
     const layout = document.createElement('div'); layout.className = 'inventory-layout';
     const inventorySide = document.createElement('div'); inventorySide.className = 'inventory-side'; inventorySide.append(controls, cards);
     layout.append(inventorySide, browser); section.append(heading, layout); panel.append(section);
@@ -578,10 +590,7 @@ function renderSkills() {
   skills.forEach(skill => {
     const displayName = skillDisplayName(skill);
     const card = document.createElement('article'); card.className = 'skill-card';
-    // Some saves persist the authoritative level beside XP. Prefer it because
-    // Dragonwilds' XP representation is not consistent across save versions.
-    const hasSavedLevel = skill.levelPath && Number.isFinite(skill.level);
-    const level = hasSavedLevel ? skill.level : levelForXp(skill.xp);
+    const level = levelForXp(skill.xp);
     const top = document.createElement('div'); top.className = 'skill-top';
     const name = document.createElement('strong'); name.textContent = displayName; name.title = skill.name ? '' : skill.id;
     const badge = document.createElement('span');
@@ -590,34 +599,31 @@ function renderSkills() {
     const fields = document.createElement('div'); fields.className = 'skill-fields';
     const note = document.createElement('small');
 
-    function refreshDerived(xp, savedLevel = null) {
-      const newLevel = Number.isFinite(savedLevel) ? savedLevel : levelForXp(xp);
+    // Level and XP represent the same underlying value—editing either updates the other and the progress bar in place.
+    function refreshDerived(xp) {
+      const newLevel = levelForXp(xp);
       badge.textContent = `LEVEL ${newLevel}`;
-      progress.hidden = Number.isFinite(savedLevel);
       progress.max = newLevel === 99 ? 1 : xpForLevel(newLevel + 1) - xpForLevel(newLevel);
       progress.value = newLevel === 99 ? 1 : xp - xpForLevel(newLevel);
-      note.textContent = Number.isFinite(savedLevel)
-        ? 'Level read directly from the save'
-        : (newLevel === 99 ? 'Maximum level reached' : `${Math.max(0, xpForLevel(newLevel + 1) - xp).toLocaleString()} XP to level ${newLevel + 1}`);
+      note.textContent = newLevel === 99 ? 'Maximum level reached' : `${Math.max(0, xpForLevel(newLevel + 1) - xp).toLocaleString()} XP to level ${newLevel + 1}`;
       return newLevel;
     }
     const levelStepper = numberStepper('Level (1–99)', level, { min: 1, max: 99 }, newLevel => {
       pushHistory();
-      if (hasSavedLevel) setAt(saveData, skill.levelPath, newLevel);
-      else setAt(saveData, skill.xpPath, xpForLevel(newLevel));
+      const newXp = xpForLevel(newLevel);
+      setAt(saveData, skill.xpPath, newXp);
       markChanged();
-      if (!hasSavedLevel) xpStepper.setValue(xpForLevel(newLevel));
-      refreshDerived(Number(xpStepper.input.value), hasSavedLevel ? newLevel : null);
+      xpStepper.setValue(newXp);
+      refreshDerived(newXp);
     });
     const xpStepper = numberStepper('Experience', skill.xp, { min: 0 }, newXp => {
       pushHistory();
       setAt(saveData, skill.xpPath, newXp);
       markChanged();
-      if (!hasSavedLevel) levelStepper.setValue(refreshDerived(newXp));
-      else refreshDerived(newXp, Number(levelStepper.input.value));
+      levelStepper.setValue(refreshDerived(newXp));
     });
     fields.append(levelStepper.row, xpStepper.row);
-    refreshDerived(skill.xp, hasSavedLevel ? level : null);
+    refreshDerived(skill.xp);
     card.append(top, progress, fields, note); grid.append(card);
   }); panel.append(grid);
 }
